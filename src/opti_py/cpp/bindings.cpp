@@ -1,5 +1,6 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
+#include <pybind11/numpy.h>
 
 #include "Optimizer/DifferentialEvolution.h"
 
@@ -30,8 +31,18 @@ PYBIND11_MODULE(_opti_py, m) {
         )
 
         .def("optimize",
-             &DifferentialEvolution::optimize,
-             py::call_guard<py::gil_scoped_release>())
+          [](DifferentialEvolution &de) {
+             std::vector<double> result;
+
+             // release the GIL while running cpp code
+             {
+               py::gil_scoped_release release;
+               result = de.optimize();
+             }
+
+          // GIL automatically reacquired
+          return py::array_t<double>(result.size(), result.data());
+          })   
 
         .def("get_best_fitness",
              &DifferentialEvolution::getBestFitness)
