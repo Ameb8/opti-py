@@ -1,0 +1,51 @@
+# Track empty results directory but keep 'empty'
+results/
+!results/.gitkeep
+!results/Example_Benchmark
+
+# Compiler files
+**/bin/
+**/build/
+**/dist/
+
+# Python files
+*.py[cod]
+*$py.class
+*.egg-info/
+*.eggs
+pip-wheel-metadata/
+__pycache__/
+.venv/
+venv/
+env/
+ENV/
+
+# CMake
+CMakeFiles/
+CMakeCache.txt
+cmake-build-*/
+compile_commands.json
+
+# IDE files
+.vscode/
+.idea/
+
+# Make
+Makefile
+makedep*
+libtool
+
+
+# Logs
+*.log*
+
+html/
+latex/
+results/
+*.png
+
+tests/
+
+# OS files
+*.DS_STORE
+*thumbs.db
