@@ -15,6 +15,7 @@
 #include "Optimizer/Crossover/Crossover.h"
 #include "Optimizer/Mutation/Mutation.h"
 #include "ProblemFactory.h"
+#include "ExperimentConfig.h"
 
 /**
  * @class DifferentialEvolution
@@ -45,8 +46,7 @@ private:
 
     DifferentialEvolution(
         std::shared_ptr<Problem> prob,
-        int dimension,
-        int maxIterations,
+        const ExperimentConfig& config,
         int popSize,
         double scale,
         double crossoverRate,
@@ -54,13 +54,13 @@ private:
         const std::string& crossoverType)
         : Optimizer(
               std::make_shared<SolutionBuilder>(
-                  dimension,
-                  prob->getLowerBound(),
-                  prob->getUpperBound(),
-                  42
+                  config.dimensions,
+                  config.lower,
+                  config.upper,
+                  config.seed
               ),
               prob,
-              maxIterations
+              config.maxIterations
           ),
           popSize(popSize),
           scale(scale),
@@ -69,22 +69,17 @@ private:
           crossStrat(createCrossover(crossoverType))
     {}
 
-
-public:
 public:
     DifferentialEvolution(
-        int problemId,
-        int dimension,
-        int maxIterations,
-        int popSize,
+        const ExperimentConfig& config,
         double scale,
         double crossoverRate,
+        int popSize,
         const std::string& mutationType,
         const std::string& crossoverType)
         : DifferentialEvolution(
-              ProblemFactory::create(problemId),
-              dimension,
-              maxIterations,
+              ProblemFactory::create(config.problemType),
+              config,
               popSize,
               scale,
               crossoverRate,
