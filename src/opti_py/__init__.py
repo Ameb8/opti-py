@@ -1,1 +1,1 @@
-from ._opti_py import DifferentialEvolution
+from ._opti_py import DifferentialEvolution, ExperimentConfig
