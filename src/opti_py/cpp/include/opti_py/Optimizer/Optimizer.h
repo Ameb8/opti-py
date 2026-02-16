@@ -52,7 +52,7 @@ public:
      *
      * @return Execution time of the algorithm
      */
-    virtual double optimize() = 0; 
+    virtual std::vector<double>optimize() = 0; 
 
     // Getters
     /** @name Accessors */

@@ -47,7 +47,7 @@ public:
      *
      * @return Execution time of the algorithm.
      */
-    double optimize() override;
+    std::vector<double> optimize() override;
 };
 
 #endif

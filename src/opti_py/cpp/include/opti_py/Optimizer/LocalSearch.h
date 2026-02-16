@@ -65,7 +65,7 @@ public:
      *
      * @return The functions execution time.
      */
-    double optimize() override;
+    std::vector<double> optimize() override;
 };
 
 #endif

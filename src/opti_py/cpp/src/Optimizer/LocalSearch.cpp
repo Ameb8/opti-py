@@ -52,13 +52,9 @@ void LocalSearch::localSearch() {
 
 
 
-double LocalSearch::optimize() {
-    // Start timing
-    using clock = std::chrono::high_resolution_clock;
-    auto start = clock::now();
-
+std::vector<double> LocalSearch::optimize() {
     for(int i = 0; i < maxIterations; i++)
         localSearch();
 
-    return std::chrono::duration<double>(clock::now() - start).count();
+    return bestFitnesses;
 }

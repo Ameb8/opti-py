@@ -3,11 +3,7 @@
 #include <limits>
 
 
-double Blind::optimize() {
-    // Start timing
-    using clock = std::chrono::high_resolution_clock;
-    auto start = clock::now();
-
+std::vector<double> Blind::optimize() {
     // Iterate population
     for(int i = 0; i < maxIterations; i++) {
         // Get neighbors
@@ -23,6 +19,5 @@ double Blind::optimize() {
         }
     }
 
-    // Return execution time
-    return std::chrono::duration<double>(clock::now() - start).count();
+    return bestFitnesses;
 }

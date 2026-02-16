@@ -101,36 +101,7 @@ public:
      *
      * @return The functions execution time.
      */
-    double optimize() override;
-
-/*
-    /**
-     * @brief Constructs a Differential Evolution optimizer.
-     *
-     * @param solutionBuilder Reference to the solution generator.
-     * @param problem Reference to the optimization problem.
-     * @param maxIterations Maximum number of local search iterations.
-     * @param popSize Initial population size
-     * @param numNeighbors Number of neighbors sampled per iteration.
-     *
-    DifferentialEvolution(
-        SolutionBuilder& solutionBuilder,
-        Problem& problem,
-        int maxIterations,
-        int popSize,
-        double scale,
-        double crossover,
-        std::unique_ptr<Crossover> crossStrat,
-        std::unique_ptr<Mutation> mutStrat
-    )
-        : Optimizer(solutionBuilder, problem, maxIterations),
-          popSize(popSize),
-          scale(scale),
-          crossover(crossover),
-          crossStrat(std::move(crossStrat)),
-          mutStrat(std::move(mutStrat))
-    { }
-*/
+    std::vector<double> optimize() override;
 
 
 };

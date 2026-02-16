@@ -42,7 +42,7 @@ std::unique_ptr<Crossover> DifferentialEvolution::createCrossover(
 
 
 
-double DifferentialEvolution::optimize() {
+std::vector<double> DifferentialEvolution::optimize() {
     // Allocate memory to store best fitness per iteration
     bestFitnesses.resize(maxIterations, std::numeric_limits<double>::max());
     
@@ -105,6 +105,6 @@ double DifferentialEvolution::optimize() {
     }
 
 
-    return std::chrono::duration<double>(clock::now() - start).count();
+    return bestFitnesses;
 }
 
