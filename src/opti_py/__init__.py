@@ -1,1 +1,1 @@
-from ._opti_py import DifferentialEvolution, ExperimentConfig
+from ._opti_py import DifferentialEvolution, ParticleSwarm, ExperimentConfig

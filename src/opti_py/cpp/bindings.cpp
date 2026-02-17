@@ -3,6 +3,7 @@
 #include <pybind11/numpy.h>
 
 #include "Optimizer/DifferentialEvolution.h"
+#include "Optimizer/ParticleSwarm.h"
 #include "ExperimentConfig.h"
 
 namespace py = pybind11;
@@ -24,7 +25,7 @@ PYBIND11_MODULE(_opti_py, m) {
             py::arg("lower"),
             py::arg("upper"),
             py::arg("seed") = 42,
-            py::arg("max_iterations") = 30
+            py::arg("max_iterations") = 100
         )
         .def_readwrite("problem_type", &ExperimentConfig::problemType)
         .def_readwrite("dimensions", &ExperimentConfig::dimensions)
@@ -54,9 +55,9 @@ PYBIND11_MODULE(_opti_py, m) {
                 std::string
             >(),
             py::arg("config"),
-            py::arg("scale"),
-            py::arg("crossover_rate"),
-            py::arg("pop_size"),
+            py::arg("scale") = 0.9,
+            py::arg("crossover_rate") = 0.6,
+            py::arg("pop_size") = 200,
             py::arg("mutation") = "rand1",
             py::arg("crossover") = "bin"
         )
@@ -84,4 +85,31 @@ PYBIND11_MODULE(_opti_py, m) {
         .def("get_best_solution",
             &DifferentialEvolution::getBestSolution
         );
+    
+
+    py::class_<ParticleSwarm>(m, "ParticleSwarm")
+        .def(py::init<
+            const ExperimentConfig&,
+            double,
+            double,
+            int
+        >(),
+        py::arg("config"),
+        py::arg("c1") = 0.8,
+        py::arg("c2") = 1.2,
+        py::arg("pop_size") = 200
+        )
+        .def("optimize",
+            [](ParticleSwarm &pso) {
+                std::vector<double> result;
+                {
+                    py::gil_scoped_release release;
+                    result = pso.optimize();
+                }
+                return py::array_t<double>(result.size(), result.data());
+            }
+        )
+        .def("get_best_fitness", &ParticleSwarm::getBestFitness)
+        .def("get_fitnesses", &ParticleSwarm::getBestFitnesses)
+        .def("get_best_solution", &ParticleSwarm::getBestSolution);
 }
