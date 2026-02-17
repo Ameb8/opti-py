@@ -101,6 +101,7 @@ public:
 
     double randNum() { return mt.genrand_real1(); }
     int randNum(int x, int y) { return x + mt.genrand_int32() % (y - x); }
+    std::vector<double> SolutionBuilder::getInitialVelocity();
 };
 
 #endif

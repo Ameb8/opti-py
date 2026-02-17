@@ -84,3 +84,17 @@ std::vector<double> SolutionBuilder::getDifference(
 
     return diff;
 }
+
+std::vector<double> SolutionBuilder::getInitialVelocity() {
+    std::vector<double> velocity(dimensions);
+
+    double range = upper - lower;
+    double vmax = 0.5 * range;
+
+    for(int i = 0; i < dimensions; i++) {
+        velocity[i] = mt.genrand_real1() * vmax;
+    }
+
+    return velocity;
+}
+
