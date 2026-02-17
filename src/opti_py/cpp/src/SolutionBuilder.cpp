@@ -85,6 +85,7 @@ std::vector<double> SolutionBuilder::getDifference(
     return diff;
 }
 
+
 std::vector<double> SolutionBuilder::getInitialVelocity() {
     std::vector<double> velocity(dimensions);
 

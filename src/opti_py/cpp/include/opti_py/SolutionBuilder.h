@@ -30,7 +30,6 @@ private:
     const int upper;        ///< Upper boundary for coordinate values
     MersenneTwister mt;     ///< Random number generator instance
 
-
 public:
     /**
      * @brief Constructs a SolutionBuilder with specific space constraints.
@@ -47,11 +46,13 @@ public:
         mt.init_genrand(seed);
     }
 
+
     /**
      * @brief Generates a single random solution vector within bounds.
      * @return A vector of size @ref dimensions with values in range [lower, upper].
      */
     std::vector<double> getRand();
+
 
     /**
      * @brief Generates a set of neighboring solutions around a central point.
@@ -70,6 +71,7 @@ public:
         double maxDelta
     );
 
+
     /** @brief Returns the dimensionality of the solution space. */
     double getDimensions() { return dimensions; }
 
@@ -87,10 +89,12 @@ public:
         int source
     );
 
+
     std::vector<double> getDifference(
         const std::vector<double> vec1,
         const std::vector<double> vec2
     );
+
 
     /**
      * @brief Ensures a coordinate stays within the defined [lower, upper] bounds.
@@ -99,9 +103,11 @@ public:
      */
     double checkBounds(double value);
 
+
     double randNum() { return mt.genrand_real1(); }
     int randNum(int x, int y) { return x + mt.genrand_int32() % (y - x); }
-    std::vector<double> SolutionBuilder::getInitialVelocity();
+    std::vector<double> getInitialVelocity();
 };
+
 
 #endif
