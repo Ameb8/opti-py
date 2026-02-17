@@ -20,21 +20,30 @@ std::vector<std::vector<double>> DifferentialEvolution::initPopulation() {
 std::unique_ptr<Mutation> DifferentialEvolution::createMutation(
     const std::string& name
 ) {
-    if (name == "rand1")
+    // Create mutation type
+    if(name == "rand1") 
         return std::make_unique<Rand1>();
-    else if (name == "best1")
+    if(name == "rand2") 
+        return std::make_unique<Rand2>();
+    if(name == "best1") 
         return std::make_unique<Best1>();
-    else
-        throw std::runtime_error("Unknown mutation strategy");
+    if(name == "best2") 
+        return std::make_unique<Best2>();
+    if(name == "randToBest1") 
+        return std::make_unique<RandBest1>();
+
+    // Type not recognized
+    throw std::runtime_error("Unknown mutation strategy: " + name);
 }
 
 
 std::unique_ptr<Crossover> DifferentialEvolution::createCrossover(
     const std::string& name
 ) {
-    if (name == "bin")
+    if(name == "bin")
         return std::make_unique<BinCrossover>();
-    else if (name == "exp")
+    else if 
+    (name == "exp")
         return std::make_unique<ExpCrossover>();
     else
         throw std::runtime_error("Unknown crossover strategy");
@@ -45,10 +54,6 @@ std::unique_ptr<Crossover> DifferentialEvolution::createCrossover(
 std::vector<double> DifferentialEvolution::optimize() {
     // Allocate memory to store best fitness per iteration
     bestFitnesses.resize(maxIterations, std::numeric_limits<double>::max());
-    
-    // Start timing
-    using clock = std::chrono::high_resolution_clock;
-    auto start = clock::now();
 
     // Randomly initialize population
     std::vector<std::vector<double>> pop = initPopulation();
@@ -68,7 +73,6 @@ std::vector<double> DifferentialEvolution::optimize() {
 
     // Track best vector
     double bestFitness = fitness[bestIdx];
-
     
     for(int i = 0; i < maxIterations; i++) {
         // Temporarily stores new population
@@ -97,6 +101,7 @@ std::vector<double> DifferentialEvolution::optimize() {
                 if(trialFitness < bestFitness) {
                     bestFitness = trialFitness;
                     bestIdx = j;
+                    bestSolution = pop[j];
                 }
             }
         }
