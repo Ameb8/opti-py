@@ -30,7 +30,7 @@ std::unique_ptr<Mutation> DifferentialEvolution::createMutation(
     if(name == "best2") 
         return std::make_unique<Best2>();
     if(name == "randToBest1") 
-        return std::make_unique<RandBest1>();
+        return std::make_unique<RandBest1>(0.8);
 
     // Type not recognized
     throw std::runtime_error("Unknown mutation strategy: " + name);
