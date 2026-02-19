@@ -1,5 +1,7 @@
 #include "SolutionBuilder.h"
 
+#include <algorithm>
+
 
 std::vector<double> SolutionBuilder::getRand() {
     std::vector<double> solution(dimensions);
@@ -93,9 +95,14 @@ std::vector<double> SolutionBuilder::getInitialVelocity() {
     double vmax = 0.5 * range;
 
     for(int i = 0; i < dimensions; i++) {
-        velocity[i] = mt.genrand_real1() * vmax;
+        velocity[i] = (2.0 * mt.genrand_real1() - 1.0) * vmax;
     }
 
     return velocity;
+}
+
+double SolutionBuilder::clampVelocity(double v) {
+    double vmax = 0.5 * (upper - lower);
+    return std::max(-vmax, std::min(vmax, v));
 }
 
