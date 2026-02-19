@@ -77,7 +77,7 @@ std::vector<double> DifferentialEvolution::optimize() {
     for(int i = 0; i < maxIterations; i++) {
         // Temporarily stores new population
         std::vector<std::vector<double>> genLockPop = pop;
-        double genBestIdx = bestIdx;
+        int genBestIdx = bestIdx;
 
         // Calculate fitnesses for initial population
         for(int j = 0; j < popSize; j++) {
