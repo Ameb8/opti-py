@@ -44,31 +44,6 @@ private:
     static std::unique_ptr<Mutation> createMutation(const std::string& name);
     static std::unique_ptr<Crossover> createCrossover(const std::string& name);
 
-    DifferentialEvolution(
-        std::shared_ptr<Problem> prob,
-        const ExperimentConfig& config,
-        int popSize,
-        double scale,
-        double crossoverRate,
-        const std::string& mutationType,
-        const std::string& crossoverType)
-        : Optimizer(
-              std::make_shared<SolutionBuilder>(
-                  config.dimensions,
-                  config.lower,
-                  config.upper,
-                  config.seed
-              ),
-              prob,
-              config.maxIterations
-          ),
-          popSize(popSize),
-          scale(scale),
-          crossover(crossoverRate),
-          mutStrat(createMutation(mutationType)),
-          crossStrat(createCrossover(crossoverType))
-    {}
-
 public:
     DifferentialEvolution(
         const ExperimentConfig& config,
@@ -77,18 +52,22 @@ public:
         int popSize,
         const std::string& mutationType,
         const std::string& crossoverType)
-        : DifferentialEvolution(
-              ProblemFactory::create(config.problemType),
-              config,
-              popSize,
-              scale,
-              crossoverRate,
-              mutationType,
-              crossoverType
-          )
+        : Optimizer(
+            std::make_shared<SolutionBuilder>(
+                config.dimensions,
+                config.lower,
+                config.upper,
+                config.seed
+            ),
+            ProblemFactory::create(config.problemType),
+            config.maxIterations
+        ),
+        popSize(popSize),
+        scale(scale),
+        crossover(crossoverRate),
+        mutStrat(DifferentialEvolution::createMutation(mutationType)),
+        crossStrat(DifferentialEvolution::createCrossover(crossoverType))
     {}
-
-
 
 
     /**
