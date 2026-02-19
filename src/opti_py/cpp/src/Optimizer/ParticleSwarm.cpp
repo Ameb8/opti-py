@@ -52,8 +52,9 @@ void ParticleSwarm::updateVelocity(
         double cognitive = c1 * r1 * (pBestPos[i] - pop[i]);
         double social = c2 * r2 * (gBestPos[i] - pop[i]);
         
-        // Update velocity
+        // Update and clamp velocity
         velocity[i] += cognitive + social;
+        velocity[i] = solutionBuilder->clampVelocity(velocity[i]);
     }
 }
 
@@ -95,7 +96,7 @@ std::vector<double> ParticleSwarm::optimize() {
     for(int i = 0; i < maxIterations; i++) {
         // Iterate particles
         for(int j = 0; j < popSize; j++) {
-            // Update particle's velocity and position
+            // Update particle's velocity
             updateVelocity(velocity[j], pop[j], pBestSolution[j], gBestSolution);
             updatePosition(pop[j], velocity[j]);
 
