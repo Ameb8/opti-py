@@ -34,14 +34,6 @@ PYBIND11_MODULE(_opti_py, m) {
         .def_readwrite("seed", &ExperimentConfig::seed)
         .def_readwrite("max_iterations", &ExperimentConfig::maxIterations);
 
-        /*
-                const ExperimentConfig& config,
-        double scale,
-        double crossoverRate,
-        int popSize,
-        const std::string& mutationType,
-        const std::string& crossoverType)
-        */
 
 
 
