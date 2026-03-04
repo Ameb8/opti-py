@@ -6,13 +6,13 @@
 #include <cstdint>
 #include <stdexcept>
 #include <cstring>
+#include <span>
+
+#include "FlowShop/FlowShopResult.h"
 
 class FlowShop {
 public:
-    // ------------------------
     // Constructors
-    // ------------------------
-
     FlowShop()
         : num_jobs_(0),
           num_machines_(0) {}
@@ -35,10 +35,7 @@ public:
             throw std::runtime_error("Data size mismatch");
     }
 
-    // ------------------------
-    // Accessors
-    // ------------------------
-
+    // Accessors 
     size_t num_jobs() const { return num_jobs_; }
     size_t num_machines() const { return num_machines_; }
 
@@ -65,7 +62,20 @@ private:
     size_t num_machines_; // columns
     std::vector<uint64_t> jobs_times_; // row-major flattened
 
-    void computeRowSums(std::vector<uint64_t>& row_sums);
+    // Helper methods
+    void computeRowSums(std::vector<uint64_t>& totalJobTimes);
+    void argSortJobs(
+        std::vector<uint64_t>& totalJobTimes,
+        std::vector<size_t>& jobOrder
+    );
+    std::span<uint64_t> getJob(
+        size_t jobNum,
+        std::vector<size_t>& jobOrder
+    );
+    void insertJob(
+        std::vector<std::vector<uint64_t>> completionTimes,
+        size_t jobNum
+    );
 };
 
 #endif
