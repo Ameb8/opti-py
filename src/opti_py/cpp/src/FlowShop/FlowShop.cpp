@@ -1,11 +1,10 @@
 #include "FlowShop/FlowShop.h"
 
 #include <algorithm>
+#include <limits>
 
 
 FlowShopResult FlowShop::runNEH(bool blocking) {
-    FlowShopResult result;
-
     // Create vector to store total execution time for each job
     std::vector<uint64_t> totalJobTimes(num_jobs_, 0);
     computeRowSums(totalJobTimes);
@@ -17,72 +16,92 @@ FlowShopResult FlowShop::runNEH(bool blocking) {
     // Create vector to store completions times of each job
     std::vector<std::vector<uint64_t>> completionTimes(num_jobs_, std::vector<uint64_t>(num_machines_));
 
-    // Get first job
+    // Calculate completion times for initial job
     std::span<uint64_t> firstJob = getJob(0, jobOrder);
-    
-    // Calculate completion time for first job
-    completionTimes[0][0] = firstJob[0];
-    for(size_t i = 1; i < num_machines_; i++)
-        completionTimes[0][i] = firstJob[i] + completionTimes[0][i-1];
+    updateCompletions(firstJob, completionTimes, 0);
 
-    
-
-    for(size_t i = 1; i < num_jobs_; i++) {
-        insertJob(completionTimes, i);
-    }
+    // Insert remaining jobs
+    for(size_t i = 1; i < num_jobs_; i++)
+        insertJob(completionTimes, jobOrder, i);
 
     // Construct Result object
-
+    FlowShopResult result{
+        jobOrder,
+        completionTimes[num_jobs_ - 1][num_machines_ - 1],
+        completionTimes
+    };
+    
     return result;
 }
 
 
 void FlowShop::insertJob(
-    std::vector<std::vector<uint64_t>> completionTimes,
+    std::vector<std::vector<uint64_t>>& completionTimes,
+    std::vector<size_t>& jobOrder,
     size_t jobNum
 ) {
+    uint64_t minMakespan = std::numeric_limits<uint64_t>::max();
+
     // Iterate through insert positions
-    for(size_t i = jobNum; i >= 0; i--) {
-        // Create matrix for candidate completion times
-        std::vector<std::vector<uint64_t>> candidateTimes(
-            completionTimes.begin() + i,
-            completionTimes.begin() + jobNum + 1
-        );
+    for(int64_t i = jobNum; i >= 0; i--) {
+        // create copy of completion times
+        std::vector<std::vector<uint64_t>> candidateTimes(completionTimes);
 
-        // Calculate completion times for new row
-        candidateTimes[0][0] = completionTimes[i][0]
-        for(size_t j = 0; j < num_machines_; j++) {
+        // Get next job
+        std::span<uint64_t> nextJob = getJob(jobNum, jobOrder);
 
+        // Insert next job
+        updateCompletions(nextJob, candidateTimes, i);
+
+        // Recalculate completion times after insertion
+        for(size_t j = i + 1; j <= jobNum; j++) {
+            // Get job to re-insert
+            std::span<uint64_t> job = getJob(j - 1, jobOrder);
+
+            updateCompletions(job, candidateTimes, j);
         }
 
-        // Recalculate execution times for insert pos and after
-        for(size_t j = 1; j < candidateTimes.size(); j++) {
-            
+        // Check if makespan improved
+        uint64_t candidateMakespan = candidateTimes[jobNum][num_machines_ - 1];
+
+        // Update best insert position
+        if(candidateMakespan < minMakespan) {
+            completionTimes = candidateTimes;
+
+            // Update job order
+            size_t jobId = jobOrder[jobNum];
+            for(size_t j = jobNum; j > i; j--)
+                jobOrder[j] = jobOrder[j-1];
+
+            jobOrder[i] = jobId; // Set insert position
         }
     }
 
 
 }
 
-
-uint64_t executeJobs(
-    std::vector<uint64_t>& job1,
-    std::vector<uint64_t>& job2,
-    std::vector<uint64_t>& compTimes1,
-    std::vector<uint64_t>& compTimes2
+void FlowShop::updateCompletions(
+    const std::span<uint64_t> jobTimes,
+    std::vector<std::vector<uint64_t>>& completionTimes,
+    size_t insertRow
 ) {
-    // Compute job 1 completion times
-    compTimes1[0] = job1[0];
-    for(size_t i = 1; i < job1.size(); i++)
-        compTimes1[i] = compTimes1[i-1] + job1[i];
+    if(insertRow == 0) { // Handle first row insert
+        completionTimes[0][0] = jobTimes[0];
+        
+        for(size_t i = 1; i < num_machines_; i++)
+            completionTimes[0][i] = completionTimes[0][i-1] + jobTimes[i];
+    } else { // Insert trailing rows
+        // Calculate first machine time
+        completionTimes[insertRow][0] = completionTimes[insertRow - 1][0] + jobTimes[0];
 
-    // Compute job 2 completion times
-    compTimes2[0] = compTimes1[0] + job2[0];
-    for(size_t i = 0; i < job2.size(); i++)
-        compTimes2[i] = std::max(compTimes2[i-1], compTimes2[i]) + job2[i];
-
-    // Return makespan (completion time of final job)
-    return compTimes2[compTimes2.size() - 1];
+        for(size_t i = 1; i < num_machines_; i++) {
+            // Ensure machine is free and job finished on last machine
+            completionTimes[insertRow][i] = jobTimes[i] + std::max(
+                completionTimes[insertRow - 1][i],
+                completionTimes[insertRow][i-1]
+            );
+        }
+    }
 }
 
 
