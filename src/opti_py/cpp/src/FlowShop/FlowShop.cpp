@@ -34,51 +34,84 @@ FlowShopResult FlowShop::runNEH(bool blocking) {
     return result;
 }
 
-
 void FlowShop::insertJob(
     std::vector<std::vector<uint64_t>>& completionTimes,
     std::vector<size_t>& jobOrder,
     size_t jobNum
 ) {
-    uint64_t minMakespan = std::numeric_limits<uint64_t>::max();
+    // Global best makespan
+    uint64_t globalMinMakespan = std::numeric_limits<uint64_t>::max();
+    int64_t bestPos = -1; // Optimal insert position
 
-    // Iterate through insert positions
-    for(int64_t i = jobNum; i >= 0; i--) {
-        // create copy of completion times
-        std::vector<std::vector<uint64_t>> candidateTimes(completionTimes);
+    // Store completion times after inserting next job optimally
+    std::vector<std::vector<uint64_t>> bestCompletion;
 
-        // Get next job
-        std::span<uint64_t> nextJob = getJob(jobNum, jobOrder);
+    // Get next job to insert
+    std::span<uint64_t> nextJob = getJob(jobNum, jobOrder);
 
-        // Insert next job
-        updateCompletions(nextJob, candidateTimes, i);
+    #pragma omp parallel // Parallelize block with OpenMP
+    {
+        // Create thread-local variables to track best insert found in thread
+        uint64_t localMinMakespan = std::numeric_limits<uint64_t>::max();
+        int64_t localBestPos = -1;
+        std::vector<std::vector<uint64_t>> localBestCompletion;
 
-        // Recalculate completion times after insertion
-        for(size_t j = i + 1; j <= jobNum; j++) {
-            // Get job to re-insert
-            std::span<uint64_t> job = getJob(j - 1, jobOrder);
+        // Test all insert positions
+        // Parallelized loop with OpenMP
+        #pragma omp for schedule(static)
+        for(int64_t i = jobNum; i >= 0; i--) {
 
-            updateCompletions(job, candidateTimes, j);
+            // Make private copy of completion times to test next insert position
+            std::vector<std::vector<uint64_t>> candidateTimes = completionTimes;
+
+            // Insert at position i
+            updateCompletions(nextJob, candidateTimes, i);
+
+            // Recalculate completion times for all jobs after insert position
+            for(size_t j = i + 1; j <= jobNum; j++) {
+                // Recalculate next job
+                std::span<uint64_t> job = getJob(j - 1, jobOrder);
+                updateCompletions(job, candidateTimes, j);
+            }
+
+            // Derive candidate makespan from completion times
+            uint64_t candidateMakespan =
+                candidateTimes[jobNum][num_machines_ - 1];
+
+            // Check if this insert position is local thread-best
+            if(candidateMakespan < localMinMakespan) {
+                // Update thread local best
+                localMinMakespan = candidateMakespan;
+                localBestPos = i;
+                localBestCompletion = std::move(candidateTimes);
+            }
         }
 
-        // Check if makespan improved
-        uint64_t candidateMakespan = candidateTimes[jobNum][num_machines_ - 1];
-
-        // Update best insert position
-        if(candidateMakespan < minMakespan) {
-            completionTimes = candidateTimes;
-
-            // Update job order
-            size_t jobId = jobOrder[jobNum];
-            for(size_t j = jobNum; j > i; j--)
-                jobOrder[j] = jobOrder[j-1];
-
-            jobOrder[i] = jobId; // Set insert position
+        // Perform reduction to determine global best
+        #pragma omp critical
+        {
+            // Compare thread best makespan to global best
+            if(localMinMakespan < globalMinMakespan) {
+                // Update global best
+                globalMinMakespan = localMinMakespan;
+                bestPos = localBestPos;
+                bestCompletion = std::move(localBestCompletion);
+            }
         }
     }
 
+    // Update completion times with new job
+    completionTimes = std::move(bestCompletion);
 
+    // Update job order of reshuffled jobs
+    size_t jobId = jobOrder[jobNum];
+    for(size_t j = jobNum; j > bestPos; j--)
+        jobOrder[j] = jobOrder[j - 1];
+
+    // Update job order for new job
+    jobOrder[bestPos] = jobId;
 }
+
 
 void FlowShop::updateCompletions(
     const std::span<uint64_t> jobTimes,
@@ -105,6 +138,7 @@ void FlowShop::updateCompletions(
 }
 
 
+// Computes sum of time across machines for each job
 void FlowShop::computeRowSums(std::vector<uint64_t>& totalJobTimes) {
     #pragma omp parallel for schedule(static)
     for(size_t i = 0; i < num_jobs_; ++i) {
@@ -120,6 +154,9 @@ void FlowShop::computeRowSums(std::vector<uint64_t>& totalJobTimes) {
 }
 
 
+
+// Performs argsort of total job times
+// Initializes jobOrder with job ID in descending order by total time
 void FlowShop::argSortJobs(
     std::vector<uint64_t>& totalJobTimes,
     std::vector<size_t>& jobOrder
