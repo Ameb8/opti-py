@@ -84,7 +84,7 @@ PYBIND11_MODULE(_opti_py, m) {
         .def_property_readonly("num_jobs",
             &FlowShop::num_jobs)
         .def_property_readonly("num_machines",
-            &FlowShop::num_machines);
+            &FlowShop::num_machines)
 
         .def("runNEH",
             &FlowShop::runNEH,
