@@ -5,7 +5,7 @@
 
 class FlowShopResult {
 public:
-    std::vector<uint64_t> sequence; // Order of job execution
+    std::vector<size_t> sequence; // Order of job execution
     uint64_t makespan; // Total execution time
     std::vector<std::vector<uint64_t>> completionTimes; // Time each job finishes on a machine
 };
