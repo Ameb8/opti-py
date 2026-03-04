@@ -5,7 +5,7 @@ from ._opti_py import (
     ParticleSwarm,
     ExperimentConfig,
     FlowShop,
-    FlowShopResults,
+    FlowShopResult,
 )
 
 # Expose problem ID mapping Enum
