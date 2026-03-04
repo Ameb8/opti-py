@@ -72,7 +72,7 @@ private:
         size_t jobNum,
         std::vector<size_t>& jobOrder
     );
-    void FlowShop::updateCompletions(
+    void updateCompletions(
         const std::span<uint64_t> jobTimes,
         std::vector<std::vector<uint64_t>>& completionTimes,
         size_t insertRow
