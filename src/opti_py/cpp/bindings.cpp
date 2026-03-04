@@ -86,7 +86,7 @@ PYBIND11_MODULE(_opti_py, m) {
         .def_property_readonly("num_machines",
             &FlowShop::num_machines)
 
-        .def("runNEH",
+        .def("run_neh",
             [](FlowShop &fs, bool blocking) {
                 FlowShopResult result;
                 { // Relese GIL to enable OpenMP parallelization
