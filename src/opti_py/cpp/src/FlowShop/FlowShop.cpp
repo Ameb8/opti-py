@@ -18,11 +18,11 @@ FlowShopResult FlowShop::runNEH(bool blocking) {
 
     // Calculate completion times for initial job
     std::span<uint64_t> firstJob = getJob(0, jobOrder);
-    updateCompletions(firstJob, completionTimes, 0);
+    updateCompletions(firstJob, completionTimes, 0, blocking);
 
     // Insert remaining jobs
     for(size_t i = 1; i < num_jobs_; i++)
-        insertJob(completionTimes, jobOrder, i);
+        insertJob(completionTimes, jobOrder, i, blocking);
 
     // Construct Result object
     FlowShopResult result{
@@ -37,7 +37,8 @@ FlowShopResult FlowShop::runNEH(bool blocking) {
 void FlowShop::insertJob(
     std::vector<std::vector<uint64_t>>& completionTimes,
     std::vector<size_t>& jobOrder,
-    size_t jobNum
+    size_t jobNum,
+    bool blocking
 ) {
     // Global best makespan
     uint64_t globalMinMakespan = std::numeric_limits<uint64_t>::max();
@@ -65,13 +66,13 @@ void FlowShop::insertJob(
             std::vector<std::vector<uint64_t>> candidateTimes = completionTimes;
 
             // Insert at position i
-            updateCompletions(nextJob, candidateTimes, i);
+            updateCompletions(nextJob, candidateTimes, i, blocking);
 
             // Recalculate completion times for all jobs after insert position
             for(size_t j = i + 1; j <= jobNum; j++) {
                 // Recalculate next job
                 std::span<uint64_t> job = getJob(j - 1, jobOrder);
-                updateCompletions(job, candidateTimes, j);
+                updateCompletions(job, candidateTimes, j, blocking);
             }
 
             // Derive candidate makespan from completion times
@@ -116,7 +117,8 @@ void FlowShop::insertJob(
 void FlowShop::updateCompletions(
     const std::span<uint64_t> jobTimes,
     std::vector<std::vector<uint64_t>>& completionTimes,
-    size_t insertRow
+    size_t insertRow,
+    bool blocking
 ) {
     if(insertRow == 0) { // Handle first row insert
         completionTimes[0][0] = jobTimes[0];
@@ -128,11 +130,29 @@ void FlowShop::updateCompletions(
         completionTimes[insertRow][0] = completionTimes[insertRow - 1][0] + jobTimes[0];
 
         for(size_t i = 1; i < num_machines_; i++) {
-            // Ensure machine is free and job finished on last machine
-            completionTimes[insertRow][i] = jobTimes[i] + std::max(
-                completionTimes[insertRow - 1][i],
-                completionTimes[insertRow][i-1]
-            );
+            if(blocking) { // Update with blocking
+                // Ensure job is finished and next machine is free
+                completionTimes[insertRow][i] = std::max(
+                    completionTimes[insertRow - 1][i] + jobTimes[i],
+                    completionTimes[insertRow][i-1] + jobTimes[i]
+                );
+            } else { // Update without blocking
+                // Ensure machine is free and job finished on last machine
+                completionTimes[insertRow][i] = jobTimes[i] + std::max(
+                    completionTimes[insertRow - 1][i],
+                    completionTimes[insertRow][i-1]
+                );
+            }
+            
+        }
+
+        if(blocking) { // Handle cascading blocking
+            for(size_t i = 1; i < num_machines_; i++)
+                // Ensure next machine is free before leaving current machine
+                completionTimes[insertRow][i] = std::max(
+                    completionTimes[insertRow][i],
+                    completionTimes[insertRow][i-1]
+                );
         }
     }
 }

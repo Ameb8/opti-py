@@ -75,12 +75,14 @@ private:
     void updateCompletions(
         const std::span<uint64_t> jobTimes,
         std::vector<std::vector<uint64_t>>& completionTimes,
-        size_t insertRow
+        size_t insertRow,
+        bool blocking
     );
     void insertJob(
         std::vector<std::vector<uint64_t>>& completionTimes,
         std::vector<size_t>& jobOrder,
-        size_t jobNum
+        size_t jobNum,
+        bool blocking
     );
 };
 
