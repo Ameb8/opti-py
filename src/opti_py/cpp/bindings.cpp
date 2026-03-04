@@ -87,9 +87,17 @@ PYBIND11_MODULE(_opti_py, m) {
             &FlowShop::num_machines)
 
         .def("runNEH",
-            &FlowShop::runNEH,
+            [](FlowShop &fs, bool blocking) {
+                FlowShopResult result;
+                { // Relese GIL to enable OpenMP parallelization
+                    py::gil_scoped_release release;
+                    result = fs.runNEH(blocking);
+                } // Reacquire GIL
+                return result;
+            },
             py::arg("blocking") = false,
-            "Run the NEH heuristic and return a FlowShopResult");
+            "Run the NEH heuristic and return a FlowShopResult"
+        );
 
 
     py::class_<FlowShopResult>(m, "FlowShopResult")
