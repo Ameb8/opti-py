@@ -19,19 +19,20 @@ def run_benchmarks(data_dir: Path) -> pd.DataFrame:
     return pd.DataFrame(benchmark_results)
 
 
-def exec_experiment(experiment, blocking: bool = False) -> dict[str, Any]:
+def exec_experiment(experiment, exp_num: int, blocking: bool = False) -> dict[str, Any]:
     # Time and execute NEH heuristic on flowshop problem
     start_time: float = time.perf_counter()
     result: FlowShopResult = experiment.run_neh(blocking=blocking)
     end_time: float = time.perf_counter()
 
     # Construct result dict from experiment config and results
-    result_dict: dict[str, Any] = vars(experiment).copy()
-    result_dict.update(vars(result))
+    result_dict: dict[str, Any] = experiment.to_dict()
+    result_dict.update(result.to_dict())
 
-    # Add fields for blocking and execution times
-    result_dict["blocking"] = blocking
-    result_dict["exec_time"] = end_time - start_time
+    # Add fields for blocking execution times, and experiment number
+    result_dict['blocking'] = blocking
+    result_dict['exec_time'] = end_time - start_time
+    result_dict['exp_num'] = exp_num
 
     return result_dict
 
@@ -48,7 +49,7 @@ def run_experiment(experiment_config: Path, exp_num: int) -> list[dict[str, Any]
     experiment: FlowShop = FlowShop(job_times)
 
     return [ # Return blocking and non-blocking result dicts
-        exec_experiment(experiment),
-        exec_experiment(experiment, blocking=True)
+        exec_experiment(experiment, exp_num),
+        exec_experiment(experiment, exp_num, blocking=True)
     ]
 

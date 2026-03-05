@@ -4,9 +4,11 @@ from pathlib import Path
 import sys
 
 from .run_benchmarks import run_benchmarks
+from .result_builder import build_results
 
 def main() -> None:
     data_dir: Path = Path.cwd()
+    output_dir: Path = Path.cwd() / 'results'
 
     # Read path to data dir
     if len(sys.argv) > 1:
@@ -19,8 +21,10 @@ def main() -> None:
             f'containing test data:\t{str(data_dir)}'
         )
 
-    run_benchmarks(data_dir)
+    # Execute all experiments
+    results: pd.DataFrame = run_benchmarks(data_dir)
 
+    build_results(results, output_dir)
 
 if __name__ == "__main__":
     main()
