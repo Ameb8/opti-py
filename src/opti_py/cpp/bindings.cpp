@@ -86,6 +86,23 @@ PYBIND11_MODULE(_opti_py, m) {
         .def_property_readonly("num_machines",
             &FlowShop::num_machines)
 
+        .def("to_dict", [](const FlowShop &fs) {
+            py::dict d;
+            d["num_jobs"] = fs.num_jobs();
+            d["num_machines"] = fs.num_machines();
+
+            // create numpy view of job matrix
+            d["jobs"] = py::array_t<uint64_t>(
+                { fs.num_jobs(), fs.num_machines() },
+                { fs.num_machines() * sizeof(uint64_t),
+                sizeof(uint64_t) },
+                fs.data(),
+                py::cast(&fs)
+            );
+
+            return d;
+        })
+
         .def("run_neh",
             [](FlowShop &fs, bool blocking) {
                 FlowShopResult result;
@@ -103,7 +120,14 @@ PYBIND11_MODULE(_opti_py, m) {
     py::class_<FlowShopResult>(m, "FlowShopResult")
         .def_readwrite("sequence", &FlowShopResult::sequence)
         .def_readwrite("makespan", &FlowShopResult::makespan)
-        .def_readwrite("completionTimes", &FlowShopResult::completionTimes);
+        .def_readwrite("completionTimes", &FlowShopResult::completionTimes)
+        .def("to_dict", [](const FlowShopResult &r) {
+            py::dict d;
+            d["sequence"] = r.sequence;
+            d["makespan"] = r.makespan;
+            d["completionTimes"] = r.completionTimes;
+            return d;
+        });
 
 
 
