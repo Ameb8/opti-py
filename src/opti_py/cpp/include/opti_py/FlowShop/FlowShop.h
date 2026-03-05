@@ -1,3 +1,10 @@
+/**
+ * @file FlowShop.h
+ * @author Alex Buckley
+ * @ingroup Flowshop
+ * @brief Implementation of the flow shop scheduling problem.
+ */
+
 #ifndef FLOW_SHOP_H
 #define FLOW_SHOP_H
 
@@ -10,6 +17,16 @@
 
 #include "FlowShop/FlowShopResult.h"
 
+
+/**
+ * @class FlowShop
+ * @brief Implements a flow shop problem with support for NEH heuristic optimization.
+ *
+ * The FlowShop class supports initializing a flow shop problem with a problem config.
+ * It allows users to modify job, job times, and machine configuration. The problem 
+ * can be optimized by the NEH heuristic, either with or without blocking. Optimization
+ * produces a FlowShopResult object containing results
+ */
 class FlowShop {
 public:
     // Constructors

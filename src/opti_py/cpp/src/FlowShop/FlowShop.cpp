@@ -131,11 +131,23 @@ void FlowShop::updateCompletions(
 
         for(size_t i = 1; i < num_machines_; i++) {
             if(blocking) { // Update with blocking
-                // Ensure job is finished and next machine is free
-                completionTimes[insertRow][i] = std::max(
-                    completionTimes[insertRow - 1][i] + jobTimes[i],
-                    completionTimes[insertRow][i-1] + jobTimes[i]
+                // True blocking: job cannot leave until next machine is free
+                // Start with earliest start based on previous machine & previous job
+                uint64_t earliestStart = std::max(
+                    completionTimes[insertRow-1][i],  // previous job on same machine
+                    completionTimes[insertRow][i-1]   // same job on previous machine
                 );
+                completionTimes[insertRow][i] = earliestStart + jobTimes[i];
+
+                // Propagate blocking to future machines if needed
+                // (ensures a job cannot move to next machine until that machine is free)
+                for(size_t j = i+1; j < num_machines_; j++) {
+                    completionTimes[insertRow][j] = std::max(
+                        completionTimes[insertRow][j-1],        // previous machine done
+                        completionTimes[insertRow-1][j]        // previous job on same machine
+                    ) + jobTimes[j];
+                }
+                break; // rest of row already handled
             } else { // Update without blocking
                 // Ensure machine is free and job finished on last machine
                 completionTimes[insertRow][i] = jobTimes[i] + std::max(
@@ -145,7 +157,7 @@ void FlowShop::updateCompletions(
             }
             
         }
-
+        /*
         if(blocking) { // Handle cascading blocking
             for(size_t i = 1; i < num_machines_; i++)
                 // Ensure next machine is free before leaving current machine
@@ -153,7 +165,7 @@ void FlowShop::updateCompletions(
                     completionTimes[insertRow][i],
                     completionTimes[insertRow][i-1]
                 );
-        }
+        }*/
     }
 }
 
