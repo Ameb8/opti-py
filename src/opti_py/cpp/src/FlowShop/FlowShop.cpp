@@ -34,6 +34,7 @@ FlowShopResult FlowShop::runNEH(bool blocking) {
     return result;
 }
 
+
 void FlowShop::insertJob(
     std::vector<std::vector<uint64_t>>& completionTimes,
     std::vector<size_t>& jobOrder,
@@ -122,7 +123,7 @@ void FlowShop::updateCompletions(
 ) {
     if(insertRow == 0) { // Handle first row insert
         completionTimes[0][0] = jobTimes[0];
-        
+
         for(size_t i = 1; i < num_machines_; i++)
             completionTimes[0][i] = completionTimes[0][i-1] + jobTimes[i];
     } else { // Insert trailing rows
@@ -130,42 +131,23 @@ void FlowShop::updateCompletions(
         completionTimes[insertRow][0] = completionTimes[insertRow - 1][0] + jobTimes[0];
 
         for(size_t i = 1; i < num_machines_; i++) {
-            if(blocking) { // Update with blocking
-                // True blocking: job cannot leave until next machine is free
-                // Start with earliest start based on previous machine & previous job
-                uint64_t earliestStart = std::max(
-                    completionTimes[insertRow-1][i],  // previous job on same machine
-                    completionTimes[insertRow][i-1]   // same job on previous machine
-                );
-                completionTimes[insertRow][i] = earliestStart + jobTimes[i];
-
-                // Propagate blocking to future machines if needed
-                // (ensures a job cannot move to next machine until that machine is free)
-                for(size_t j = i+1; j < num_machines_; j++) {
-                    completionTimes[insertRow][j] = std::max(
-                        completionTimes[insertRow][j-1],        // previous machine done
-                        completionTimes[insertRow-1][j]        // previous job on same machine
-                    ) + jobTimes[j];
-                }
-                break; // rest of row already handled
-            } else { // Update without blocking
-                // Ensure machine is free and job finished on last machine
-                completionTimes[insertRow][i] = jobTimes[i] + std::max(
-                    completionTimes[insertRow - 1][i],
-                    completionTimes[insertRow][i-1]
-                );
-            }
-            
+            // Ensure machine is free and job finished on last machine
+            completionTimes[insertRow][i] = jobTimes[i] + std::max(
+                completionTimes[insertRow - 1][i],
+                completionTimes[insertRow][i-1]
+            );
         }
-        /*
-        if(blocking) { // Handle cascading blocking
-            for(size_t i = 1; i < num_machines_; i++)
-                // Ensure next machine is free before leaving current machine
+        
+        if(blocking) { // Propagate blocking for job
+            for(int64_t i = num_machines_ - 2; i >= 0; i--) {
+                // Increase completion time to wait until next machine is free
                 completionTimes[insertRow][i] = std::max(
                     completionTimes[insertRow][i],
-                    completionTimes[insertRow][i-1]
+                    completionTimes[insertRow - 1][i+1]
                 );
-        }*/
+            }
+        }
+
     }
 }
 
@@ -184,7 +166,6 @@ void FlowShop::computeRowSums(std::vector<uint64_t>& totalJobTimes) {
         totalJobTimes[i] = sum;
     }
 }
-
 
 
 // Performs argsort of total job times
