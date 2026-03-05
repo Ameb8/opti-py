@@ -49,3 +49,6 @@ tests/
 # OS files
 *.DS_STORE
 *thumbs.db
+
+# Test input data
+**/data/
