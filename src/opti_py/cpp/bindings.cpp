@@ -81,13 +81,13 @@ PYBIND11_MODULE(_opti_py, m) {
                             std::move(new_data));
             }
         )
-        .def_property("tardiness",
+        .def_property("due_dates",
 
             [](FlowShop& self) {
                 return py::array_t<uint64_t>(
                     { self.num_jobs() },
                     { sizeof(uint64_t) },
-                    self.tardiness_data(),
+                    self.due_dates_data(),
                     py::cast(&self)
                 );
             },
@@ -99,10 +99,10 @@ PYBIND11_MODULE(_opti_py, m) {
                 auto buf = arr.request();
 
                 if (buf.ndim != 1)
-                    throw std::runtime_error("tardiness must be 1D");
+                    throw std::runtime_error("due_dates must be 1D");
 
                 if ((size_t)buf.shape[0] != self.num_jobs())
-                    throw std::runtime_error("tardiness length must equal num_jobs");
+                    throw std::runtime_error("due_dates length must equal num_jobs");
 
                 std::vector<uint64_t> new_data(self.num_jobs());
 
@@ -110,7 +110,7 @@ PYBIND11_MODULE(_opti_py, m) {
                             buf.ptr,
                             new_data.size() * sizeof(uint64_t));
 
-                self.set_tardiness(std::move(new_data));
+                self.set_due_dates(std::move(new_data));
             }
         )
         .def_property_readonly("num_jobs",
@@ -132,11 +132,11 @@ PYBIND11_MODULE(_opti_py, m) {
                 py::cast(&fs)
             );
 
-            // Create numpy view of tardiness array
-            d["tardiness"] = py::array_t<uint64_t>(
+            // Create numpy view of due_dates array
+            d["due_dates"] = py::array_t<uint64_t>(
                 { fs.num_jobs() },
                 { sizeof(uint64_t) },
-                fs.tardiness_data(),
+                fs.due_dates_data(),
                 py::cast(&fs)
             );
 
