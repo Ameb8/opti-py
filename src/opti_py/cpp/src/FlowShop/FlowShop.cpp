@@ -84,11 +84,11 @@ void FlowShop::insertJob(
             if(!optimizeTardiness) // Derive candidate makespan from completion times
                 candidateRank = candidateTimes[jobNum][num_machines_ - 1];
             else // Derive candidate total tardiness from completion times
-                candidateRank = calculateTotalTardiness(completionTimes, jobOrder);
+                candidateRank = calculateTotalTardiness(candidateTimes, jobOrder);
 
 
             // Check if this insert position is local thread-best
-            if(candidateMakespan < localMinRank) {
+            if(candidateRank < localMinRank) {
                 // Update thread local best
                 localMinRank = candidateRank;
                 localBestPos = i;
@@ -100,7 +100,7 @@ void FlowShop::insertJob(
         #pragma omp critical
         {
             // Compare thread best makespan to global best
-            if(localMinMakespan < globalMinRank) {
+            if(localMinRank< globalMinRank) {
                 // Update global best
                 globalMinRank = localMinRank;
                 bestPos = localBestPos;
@@ -123,20 +123,20 @@ void FlowShop::insertJob(
 
 
 uint64_t FlowShop::calculateTotalTardiness(
-    const std::vector<std::vector<uint64_t>> completionTimes,
-    const std::vector<uint64_t> jobOrder
+    const std::vector<std::vector<uint64_t>>& completionTimes,
+    const std::vector<size_t>& jobOrder
 ) {
     uint64_t totalTardiness = 0;
 
     // Iterate through jobs
     for(size_t i = 0; i < num_jobs_; i++) {
         // Get job completion time
-        uint64_t completeTime += completionTimes[jobOrder[i]][num_machines_ - 1];
+        uint64_t completeTime = completionTimes[jobOrder[i]][num_machines_ - 1];
 
         // Calculate job tardiness
-        totalTardiness += completionTime - std::min(
-            due_dates_[i],
-            completionTime
+        totalTardiness += completeTime - std::min(
+            due_dates_[jobOrder[i]],
+            completeTime
         );
     }
 
@@ -144,20 +144,20 @@ uint64_t FlowShop::calculateTotalTardiness(
 }
 
 std::vector<uint64_t> FlowShop::calculateTardiness(
-    const std::vector<std::vector<uint64_t>> completionTimes,
-    const std::vector<uint64_t> jobOrder
+    const std::vector<std::vector<uint64_t>>& completionTimes,
+    const std::vector<size_t>& jobOrder
 ) {
     std::vector<uint64_t> tardiness(num_jobs_);
 
     // Iterate through jobs
     for(size_t i = 0; i < num_jobs_; i++) {
         // Get job completion time
-        uint64_t completeTime += completionTimes[jobOrder[i]][num_machines_ - 1];
+        uint64_t completeTime = completionTimes[jobOrder[i]][num_machines_ - 1];
 
         // Calculate job tardiness
-        tardiness[i] = completionTime - std::min(
-            due_dates_[i],
-            completionTime
+        tardiness[i] = completeTime - std::min(
+            due_dates_[jobOrder[i]],
+            completeTime
         );
     }
 

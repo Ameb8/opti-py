@@ -127,12 +127,12 @@ private:
         bool optimizeTardiness
     );
     std::vector<uint64_t> calculateTardiness(
-        const std::vector<std::vector<uint64_t>> completionTimes,
-        const std::vector<uint64_t> jobOrder
+        const std::vector<std::vector<uint64_t>>& completionTimes,
+        const std::vector<size_t>& jobOrder
     );
     uint64_t calculateTotalTardiness(
-        const std::vector<std::vector<uint64_t>> completionTimes,
-        const std::vector<uint64_t> jobOrder
+        const std::vector<std::vector<uint64_t>>& completionTimes,
+        const std::vector<size_t>& jobOrder
     );
 };
 
