@@ -81,6 +81,38 @@ PYBIND11_MODULE(_opti_py, m) {
                             std::move(new_data));
             }
         )
+        .def_property("tardiness",
+
+            [](FlowShop& self) {
+                return py::array_t<uint64_t>(
+                    { self.num_jobs() },
+                    { sizeof(uint64_t) },
+                    self.tardiness_data(),
+                    py::cast(&self)
+                );
+            },
+
+            [](FlowShop& self,
+            py::array_t<uint64_t,
+                        py::array::c_style | py::array::forcecast> arr)
+            {
+                auto buf = arr.request();
+
+                if (buf.ndim != 1)
+                    throw std::runtime_error("tardiness must be 1D");
+
+                if ((size_t)buf.shape[0] != self.num_jobs())
+                    throw std::runtime_error("tardiness length must equal num_jobs");
+
+                std::vector<uint64_t> new_data(self.num_jobs());
+
+                std::memcpy(new_data.data(),
+                            buf.ptr,
+                            new_data.size() * sizeof(uint64_t));
+
+                self.set_tardiness(std::move(new_data));
+            }
+        )
         .def_property_readonly("num_jobs",
             &FlowShop::num_jobs)
         .def_property_readonly("num_machines",
@@ -97,6 +129,14 @@ PYBIND11_MODULE(_opti_py, m) {
                 { fs.num_machines() * sizeof(uint64_t),
                 sizeof(uint64_t) },
                 fs.data(),
+                py::cast(&fs)
+            );
+
+            // Create numpy view of tardiness array
+            d["tardiness"] = py::array_t<uint64_t>(
+                { fs.num_jobs() },
+                { sizeof(uint64_t) },
+                fs.tardiness_data(),
                 py::cast(&fs)
             );
 
