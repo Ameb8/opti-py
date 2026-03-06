@@ -33,14 +33,14 @@ public:
     FlowShop()
         : num_jobs_(0),
           num_machines_(0),
-          tardiness_(0) {}
+          due_dates_(0) {}
 
     FlowShop(size_t num_jobs,
              size_t num_machines)
         : num_jobs_(num_jobs),
           num_machines_(num_machines),
           jobs_times_(num_jobs * num_machines, 0),
-          tardiness_(num_jobs, 0) {}
+          due_dates_(num_jobs, 0) {}
 
     // Internal constructor used by pybind11
     FlowShop(size_t num_jobs,
@@ -49,7 +49,7 @@ public:
         : num_jobs_(num_jobs),
           num_machines_(num_machines),
           jobs_times_(std::move(data)),
-          tardiness_(num_jobs, 0)
+          due_dates_(num_jobs, 0)
     {
         if (jobs_times_.size() != num_jobs_ * num_machines_)
             throw std::runtime_error("Data size mismatch");
@@ -62,8 +62,8 @@ public:
     uint64_t* data() { return jobs_times_.data(); }
     const uint64_t* data() const { return jobs_times_.data(); }
 
-    uint64_t* tardiness_data() { return tardiness_.data(); }
-    const uint64_t* tardiness_data() const { return tardiness_.data(); }
+    uint64_t* due_dates_data() { return due_dates_.data(); }
+    const uint64_t* due_dates_data() const { return due_dates_.data(); }
 
     // Replace entire matrix (used by setter)
     void set_jobs(
@@ -78,16 +78,16 @@ public:
         num_jobs_ = num_jobs;
         num_machines_ = num_machines;
         jobs_times_ = std::move(new_data);
-        tardiness_.assign(num_jobs_, 0);
+        due_dates_.assign(num_jobs_, 0);
     }
 
-    // Replace tardiness vector
-    void set_tardiness(std::vector<uint64_t>&& new_data) {
+    // Replace due_dates vector
+    void set_due_dates(std::vector<uint64_t>&& new_data) {
         // Throw error if size mismatch
         if(new_data.size() != num_jobs_)
-            throw std::runtime_error("tardiness size must equal num_jobs");
+            throw std::runtime_error("due_dates size must equal num_jobs");
 
-        tardiness_ = std::move(new_data);
+        due_dates_ = std::move(new_data);
     }
 
     FlowShopResult runNEH(bool blocking = false);
@@ -96,7 +96,7 @@ private:
     size_t num_jobs_; // rows
     size_t num_machines_; // columns
     std::vector<uint64_t> jobs_times_; // row-major flattened
-    std::vector<uint64_t> tardiness_;
+    std::vector<uint64_t> due_dates_;
 
     // Helper methods
     void computeRowSums(std::vector<uint64_t>& totalJobTimes);
