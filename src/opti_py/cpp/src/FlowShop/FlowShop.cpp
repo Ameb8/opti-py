@@ -11,7 +11,7 @@ FlowShopResult FlowShop::runNEH(bool blocking, bool optimizeTardiness) {
 
     // Create vector to store job execution order
     std::vector<size_t> jobOrder(num_jobs_);
-    argSortJobs(totalJobTimes, jobOrder);
+    argSortJobs(totalJobTimes, jobOrder, optimizeTardiness);
 
     // Create vector to store completions times of each job
     std::vector<std::vector<uint64_t>> completionTimes(num_jobs_, std::vector<uint64_t>(num_machines_));
@@ -95,9 +95,6 @@ void FlowShop::insertJob(
                 localBestCompletion = std::move(candidateTimes);
             }
         }
-
-
-
 
         // Perform reduction to determine global best
         #pragma omp critical
@@ -226,20 +223,31 @@ void FlowShop::computeRowSums(std::vector<uint64_t>& totalJobTimes) {
 // Initializes jobOrder with job ID in descending order by total time
 void FlowShop::argSortJobs(
     std::vector<uint64_t>& totalJobTimes,
-    std::vector<size_t>& jobOrder
+    std::vector<size_t>& jobOrder,
+    bool sortDueDates
 ) {
     // Initialize index array
     #pragma omp parallel for
     for(size_t i = 0; i < jobOrder.size(); ++i)
         jobOrder[i] = i;
 
-    std::sort(
-        jobOrder.begin(),
-        jobOrder.end(),
-        [&totalJobTimes](size_t a, size_t b) {
-            return totalJobTimes[a] > totalJobTimes[b];
-        }
-    );
+    if(sortDueDates){
+        std::sort(
+            jobOrder.begin(),
+            jobOrder.end(),
+            [this](size_t a, size_t b) {
+                return due_dates_[a] > due_dates_[b];
+            }
+        );
+    } else {
+        std::sort(
+            jobOrder.begin(),
+            jobOrder.end(),
+            [&totalJobTimes](size_t a, size_t b) {
+                return totalJobTimes[a] > totalJobTimes[b];
+            }
+        );
+    }
 }
 
 

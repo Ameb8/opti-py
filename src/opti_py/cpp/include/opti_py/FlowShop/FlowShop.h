@@ -106,7 +106,8 @@ private:
     void computeRowSums(std::vector<uint64_t>& totalJobTimes);
     void argSortJobs(
         std::vector<uint64_t>& totalJobTimes,
-        std::vector<size_t>& jobOrder
+        std::vector<size_t>& jobOrder,
+        bool sortDueDates
     );
     std::span<uint64_t> getJob(
         size_t jobNum,
