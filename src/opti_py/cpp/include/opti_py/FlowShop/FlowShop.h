@@ -134,6 +134,11 @@ private:
         const std::vector<std::vector<uint64_t>>& completionTimes,
         const std::vector<size_t>& jobOrder
     );
+    uint64_t evaluateSchedule(
+        const std::vector<size_t>& jobOrder,
+        bool blocking,
+        bool optimizeTardiness
+    );
 };
 
 #endif

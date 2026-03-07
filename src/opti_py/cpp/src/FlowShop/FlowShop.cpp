@@ -101,6 +101,75 @@ void FlowShop::initPopulationVectors(
 }
 
 
+std::vector<size_t> FlowShop::getSubset(
+    size_t populationSize,
+    size_t subsetSize,
+    size_t source,
+    MersenneTwister& mt
+) {
+    std::vector<size_t> indices(populationSize - 1);
+    size_t idx = 0;
+
+    // Prepare vector of all valid indices except source
+    for(size_t i = 0; i < populationSize; i++) {
+        if (i != source) {
+            indices[idx] = i;
+            ++idx;
+        }
+    }
+
+    // Partial Fisher-Yates shuffle to select subsetSize random indices
+    for(size_t i = 0; i < subsetSize; i++) {
+        int j = i + (mt.genrand_int32() % (indices.size() - i));
+        std::swap(indices[i], indices[j]);
+    }
+
+    // Return only the first 'subsetSize' indices
+    indices.resize(subsetSize);
+    return indices;
+}
+
+void FlowShop::clampValue(ddouble& val) {
+    if(val < -1.0)
+        val = 1.0
+    else if(val > 1.0)
+        val = 1.0
+}
+
+std::vector<double> mutate(
+    const std::vector<std::vector<double>>& population,
+    const std::vector<size_t>& subset,
+    int targetIndex,
+    double f,
+) {
+    std::vector<double> mutated(population[targetIndex].size());
+
+    // Create mutated vector
+    for(int i = 0; i < mutated.size(); i++) {
+        mutated[i] = population[subset[1]][i] - population[subset[2]][i];
+        mutated[i] *= f;
+        mutated[i] += population[subset[0]][i];
+        mutated[i].clampValue();
+    }
+
+    return mutated;
+}
+
+void FlowShop::crossover(
+    std::vector<double>& target,
+    const std::vector<double>& mutant,
+    double cr,
+    MersenneTwister& mt
+) {
+    int jrand = builder.randNum(0, target.size());
+
+    for(int i = 0; i < target.size(); i++) {
+        if (i == jrand || x + mt.genrand_real() % (y - x) < CR)
+            target[i] = mutant[i];
+    }
+}
+
+
 FlowShopResult FlowShop::runDE(
     size_t popSize,
     double f,
@@ -175,12 +244,29 @@ FlowShopResult FlowShop::runDE(
     std::vector<std::vector<size_t>> newPermutations;
     std::vector<size_t>> newSolutionRanks;
 
-    
+
     for(size_t i = 0; i < maxGenerations; i++) {
+        // Copy generation's initial population
+        newPopulation = population;
+
         for(size_t j = 0; j < popSize; j++) {
+            // Create RNG seeded for each iteration
+            MersenneTwister mt;
+            mt.init_genrand(seed + i); // Ensure determinissm
+
+            // Select 3 distinct solutions
+            std::vector<size_t> solutionIndexes = getSubset(popSize, 3, j, mt);
+
             // Generate mutant vector
+            std::vector<double> mutated = mutate(
+                population,
+                solutionIndexes,
+                i,
+                f
+            )
 
             // Generate Trial vector
+            crossover(newPopulation[i], mutant, cr, mt);
 
             // Convert trial vector to permutation
 
