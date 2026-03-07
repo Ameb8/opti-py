@@ -2,6 +2,9 @@
 
 #include <algorithm>
 #include <limits>
+#include <omp.h>
+
+#include "External/mt.h"
 
 
 FlowShopResult FlowShop::runNEH(bool blocking, bool optimizeTardiness) {
@@ -14,7 +17,10 @@ FlowShopResult FlowShop::runNEH(bool blocking, bool optimizeTardiness) {
     argSortJobs(totalJobTimes, jobOrder, optimizeTardiness);
 
     // Create vector to store completions times of each job
-    std::vector<std::vector<uint64_t>> completionTimes(num_jobs_, std::vector<uint64_t>(num_machines_));
+    std::vector<std::vector<uint64_t>> completionTimes(
+        num_jobs_, 
+        std::vector<uint64_t>(num_machines_)
+    );
 
     // Calculate completion times for initial job
     std::span<uint64_t> firstJob = getJob(0, jobOrder);
@@ -33,6 +39,78 @@ FlowShopResult FlowShop::runNEH(bool blocking, bool optimizeTardiness) {
     };
     
     return result;
+}
+
+
+std::vector<double> FlowShop::permToSPV(std::vector<size_t>& permutation) {
+    std::vector<double> spvVec(permutation.size());
+    
+    // Assign each job its permutation position
+    for(size_t i = 0; i < permutation.size(); i++)
+        spvVec[permutation[pos]] = static_cast<double>(pos);
+
+    // Scale values from position to [-1, 1] SPV range
+    for(size_t i = 0; i < permutation.size(); i++)
+        spvVec[i] = -1.0 + 2.0 * spvVec[i] / (n - 1);
+
+    return spvVec;
+}
+
+
+void FlowShop::initPopulationVectors(
+    std::vector<std::vector<double>>& population,
+    bool blocking,
+    bool optimizeTardiness,
+    unsigned long seed
+) {
+    // Generate 1 NEH permutation for initial population
+    FlowShopResult initSeed = runNEH(blocking, optimizeTardiness);
+    population[0] = permToSPV(initSeed.sequence);
+
+    // Generate random permutations in parallel
+    #pragma omp parallel for
+    for(size_t i = 1; i < population.size(); i++) {
+        // Create pseudo-random generator each iteration
+        MersenneTwister mt;
+        mt.init_genrand(seed + i); // Seed deterministically
+
+        // Create randomized SPV vector
+        for(size_t j = 0; j < population[i].size(); j++)
+            population[i][j] = 2.0 * mt.random() - 1.0;
+    }
+}
+
+
+FlowShopResult FlowShop::runDE(
+    size_t popSize,
+    double f,
+    double cr,
+    size_t maxGenerations,
+    bool blocking,
+    bool optimizeTardiness,
+    unsigned long seed
+) {
+    // Generate random initial population with 1 NEH permutation
+    std::vector<std::vector<double>> population(popSize);
+    initPopulation(
+        population,
+        blocking,
+        optimizeTardiness,
+        seed
+    )
+
+    // Stores permutation population representations
+    std::vector<std::vector<double>> permutations(popSize);
+
+    // Stores rank of each population member (makespan or tardiness)
+    std::vector<uint64_t> solutionRanks;
+
+    size_t globalBestIdx;
+    uint64_t globalBestIndex;
+
+
+    
+    
 }
 
 
@@ -119,6 +197,27 @@ void FlowShop::insertJob(
 
     // Update job order for new job
     jobOrder[bestPos] = jobId;
+}
+
+
+uint64_t FlowShop::evaluateSchedule(
+    const std::vector<size_t>& jobOrder,
+    bool blocking,
+    bool optimizeTardiness
+) {
+    // Create vector to store completions times of each job
+    std::vector<std::vector<uint64_t>> completionTimes(num_jobs_, std::vector<uint64_t>(num_machines_));
+
+    // Calculate each job's completion time
+    for(size_t i = 0; i < num_jobs; i++) {
+        std::span<uint64_t> job = getJob(i, jobOrder);
+        updateCompletions(job, completionTimes, i, blocking);
+    }
+
+    if(optimizeTardiness)
+        return calculateTardiness(completionTimes, jobOrder);
+
+    return completionTimes[num_jobs_, num_machines_];
 }
 
 
