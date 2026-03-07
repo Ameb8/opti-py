@@ -42,7 +42,9 @@ FlowShopResult FlowShop::runNEH(bool blocking, bool optimizeTardiness) {
 }
 
 
-std::vector<double> FlowShop::permToSPV(std::vector<size_t>& permutation) {
+std::vector<double> FlowShop::permToSPV(
+    const std::vector<size_t>& permutation
+) {
     std::vector<double> spvVec(permutation.size());
     
     // Assign each job its permutation position
@@ -54,6 +56,24 @@ std::vector<double> FlowShop::permToSPV(std::vector<size_t>& permutation) {
         spvVec[i] = -1.0 + 2.0 * spvVec[i] / (n - 1);
 
     return spvVec;
+}
+
+void spvToPerm(
+    const std::vector<double>& spvVec,
+    std::vector<size_t>& permutation
+) {
+    // Initialize permutations as index
+    for(size_t i = 0; i < n; i++)
+        permutation[i] = i;
+
+    // Perform argsort by SPV values
+    std::sort(
+        permutation.begin(),
+        permutation.end(),
+        [&](size_t a, size_t b) { // Comparator lambda
+            return spvVec[a] > spvVec[b];
+        }
+    );
 }
 
 
@@ -103,12 +123,74 @@ FlowShopResult FlowShop::runDE(
     std::vector<std::vector<double>> permutations(popSize);
 
     // Stores rank of each population member (makespan or tardiness)
-    std::vector<uint64_t> solutionRanks;
+    std::vector<uint64_t> solutionRanks(,
+        popSize,
+        std::numeric_limits<uint64_t>::max();
+    );
 
+    // Track global best solution
     size_t globalBestIdx;
-    uint64_t globalBestIndex;
+    uint64_t globalBestRank = std::numeric_limits<uint64_t>::max();
 
 
+    // Calculate permutations and rank for initial population
+    // Parallelize with OpenMP
+    #pragma omp parallel {
+        // Best solution found per thread
+        uint64_t threadBestRank = -std::numeric_limits<uint64_t>::infinity();
+        size_t threadBestIdx = 0;
+
+        // Calculate permutation and rank in parallel
+        #pragma omp for
+        for(size_t i = 0; i < popSize; i++) {
+            // Calculate permutation and rank
+            permutations[i] = spvToPerm(population[i]);
+            solutionRanks[i] = evaluateSchedule(
+                permutations[i],
+                blocking,
+                optimizeTardiness
+            )
+
+            // Compare solution to thread best
+            if(solutionRanks[i] < thread_max) {
+                // Update thread best
+                threadBestRank = solutionRanks[i];
+                threadBestIdx = i;
+            }
+        }
+
+        // Perform reduction to calculate global best solution
+        #pragma omp critical {
+            // Compare thread best to global best
+            if(threadBestRank < globalBestRank) {
+                // Update global best
+                globalBestRank = threadBestRank;
+                globalBestIdx = threadBestIdx;
+            }
+        }
+    }
+
+    // Store temporary population during generation updates
+    std::vector<std::vector<double>> newPopulation;
+    std::vector<std::vector<size_t>> newPermutations;
+    std::vector<size_t>> newSolutionRanks;
+
+    
+    for(size_t i = 0; i < maxGenerations; i++) {
+        for(size_t j = 0; j < popSize; j++) {
+            // Generate mutant vector
+
+            // Generate Trial vector
+
+            // Convert trial vector to permutation
+
+            // Calculate permutation ranking
+
+            // Perform greedy replacement
+
+            // Update global best
+        }
+    }
     
     
 }
@@ -217,7 +299,7 @@ uint64_t FlowShop::evaluateSchedule(
     if(optimizeTardiness)
         return calculateTardiness(completionTimes, jobOrder);
 
-    return completionTimes[num_jobs_, num_machines_];
+    return completionTimes[num_jobs_ - 1, num_machines_ - 1];
 }
 
 
