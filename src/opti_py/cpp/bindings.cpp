@@ -145,6 +145,7 @@ PYBIND11_MODULE(_opti_py, m) {
 
         .def("run_neh",
             [](FlowShop &fs, bool blocking, bool tardiness) {
+                // Lambda to invoke cpp method
                 FlowShopResult result;
                 { // Relese GIL to enable OpenMP parallelization
                     py::gil_scoped_release release;
@@ -152,9 +153,50 @@ PYBIND11_MODULE(_opti_py, m) {
                 } // Reacquire GIL
                 return result;
             },
+
+            // Assign Default paramters
             py::arg("blocking") = false,
             py::arg("tardiness") = false,
             "Run the NEH heuristic and return a FlowShopResult"
+        )
+
+
+        .def("run_de",
+            [](
+                FlowShop &fs,
+                bool blocking,
+                bool tardiness,
+                size_t max_gens,
+                size_t pop_size,
+                double f,
+                double cr,
+                unsigned long seed
+            ) {
+                // Lambda to invoke cpp method
+                FlowShopResult result;
+                { // Release GIL to enable OpenMP parallelization
+                    py::gil_scoped_release release;
+                    result = fs.runDE(
+                        blocking,
+                        tardiness,
+                        pop_size,
+                        f,
+                        cr,
+                        max_gens,
+                        seed
+                    );
+                } // Reacquire GIL
+                return result;
+            },
+            
+            // Assign default parameters
+            py::arg("blocking") = false,
+            py::arg("tardiness") = false,
+            py::arg("max_gens") = 100,
+            py::arg("pop_size") = 200,
+            py::arg("f") = 0.5,
+            py::arg("cr") = 0.9,    
+            py::arg("seed") = 108664UL
         );
 
 
