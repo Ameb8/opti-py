@@ -126,8 +126,6 @@ std::vector<double> FlowShop::permToSPV(
 }
 
 
-
-
 void FlowShop::spvToPerm(
     const std::vector<double>& spvVec,
     std::vector<size_t>& permutation
@@ -158,7 +156,16 @@ void FlowShop::initPopulationVectors(
 ) {
     // Generate 1 NEH permutation for initial population
     FlowShopResult initSeed = runNEH(blocking, optimizeTardiness);
-    population[0] = permToSPV(initSeed.sequence);
+    std::vector<double> nehSPV = permToSPV(initSeed.sequence);
+    population[0] = nehSPV;
+
+    // Fill next K slots with perturbed NEH
+    size_t numPerturbed = population.size() / 4; // 25% of population
+
+    // Set scale for perturbation
+    double perturbScale = 0.1;
+    if(optimizeTardiness)
+        perturbScale = 0.02;
 
     // Generate random permutations in parallel
     #pragma omp parallel for
@@ -170,9 +177,16 @@ void FlowShop::initPopulationVectors(
         MersenneTwister mt;
         mt.init_genrand(seed + i); // Seed deterministically
 
-        // Create randomized SPV vector
-        for(size_t j = 0; j < population[i].size(); j++)
-            population[i][j] = 2.0 * mt.genrand_real1() - 1.0;
+        // Generate initial SPV vector
+        if(i > numPerturbed) { // Generate random SPV vector
+            for(size_t j = 0; j < population[i].size(); j++)
+                population[i][j] = 2.0 * mt.genrand_real1() - 1.0;
+        } else { // Add noise to NEH-generated SPV vector
+            for(size_t j = 0; j < num_jobs_; j++) {
+                double noise = perturbScale * (2.0 * mt.genrand_real1() - 1.0); // small perturbation
+                population[i][j] = std::clamp(nehSPV[j] + noise, -1.0, 1.0);
+            }
+        }
     }
 }
 
@@ -325,7 +339,6 @@ std::vector<uint64_t> FlowShop::calculateTardiness(
 
     return tardiness;
 }
-
 
 
 void FlowShop::updateCompletions(
