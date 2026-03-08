@@ -13,7 +13,9 @@ std::vector<double> DifferentialEvolution::optimize(
     double f,
     double cr,
     size_t maxGenerations,
-    unsigned long seed
+    unsigned long seed,
+    std::string& mutationStrategy,
+    std::string& crossoverStrategy
 ) {
     // Ensure population exists
     if(popSize == 0)
@@ -26,6 +28,16 @@ std::vector<double> DifferentialEvolution::optimize(
     // Get bounds for problem
     double lower = problem.getLowerBounds();
     double upper = problem.getUpperBounds();
+
+    // Assign default mutation and crossover
+    if(mutationStrategy == "")
+        mutationStrategy = "rand1";
+    if(crossoverStrategy == "")
+        crossoverStrategy = "bin";
+
+    // Create mutation and crossover objects
+    std::unique_ptr<Mutation> mutation = createMutation(mutationStrategy);
+    //std::unique_ptr<Crossover> crossover = createCrossover(crossoverStrategy);
 
     // Stores fitness of each solution
     std::vector<double> solutionFitnesses(popSize);
@@ -90,15 +102,14 @@ std::vector<double> DifferentialEvolution::optimize(
                 // Create RNG seeded for each iteration
                 MersenneTwister mt;
                 mt.init_genrand(seed + i + j); // Ensure determinism
-
-                // Select 3 distinct solutions
-                std::vector<size_t> solutionIndexes = getSubset(popSize, 3, j, mt);
-
+                
                 // Generate mutant vector
-                std::vector<double> mutant = mutate(
+                std::vector<double> mutant = mutation->mutate(
                     population,
-                    solutionIndexes,
+                    j,
                     f,
+                    population[globalBestIdx],
+                    mt,
                     lower,
                     upper
                 );
