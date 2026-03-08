@@ -41,7 +41,7 @@ void DifferentialEvolution::crossover(
     int jrand = mt.genrand_int32() % target.size();
 
     for(size_t i = 0; i < target.size(); i++) {
-        if (i == jrand || mt.genrand_real() < cr)
+        if (i == jrand || mt.genrand_real2() < cr)
             target[i] = mutant[i];
     }
 }
@@ -78,4 +78,3 @@ std::vector<double> DifferentialEvolution::mutate(
 
     return mutant;
 }
-

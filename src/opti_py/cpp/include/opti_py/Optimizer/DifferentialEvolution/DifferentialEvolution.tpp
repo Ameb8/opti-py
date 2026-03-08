@@ -32,7 +32,7 @@ std::vector<double> DifferentialEvolution::optimize(
 
     // Store global best solution
     double globalBestFitness = std::numeric_limits<double>::max();
-    size_t globalBestIdx;
+    size_t globalBestIdx = 0;
 
     // Calculate permutations and fitness for initial population
     // Parallelize with OpenMP
@@ -58,7 +58,8 @@ std::vector<double> DifferentialEvolution::optimize(
         }
 
         // Perform reduction to calculate global best solution
-        #pragma omp critical {
+        #pragma omp critical
+        {
             // Compare thread best to global best
             if(threadBestFitness < globalBestFitness) {
                 // Update global best

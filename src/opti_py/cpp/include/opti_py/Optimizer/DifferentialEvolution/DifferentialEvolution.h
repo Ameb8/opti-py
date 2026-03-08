@@ -4,7 +4,7 @@
 #include <vector>
 #include <cstddef>
 #include "External/mt.h"
-#include "Evaluable.h"
+#include "Optimizer/Evaluable.h"
 
 class DifferentialEvolution {
 public:
@@ -85,7 +85,7 @@ public:
      * @param seed Random seed
      * @return std::vector<double> Best solution found
      */
-    template<typename Problem>
+    template<Evaluable Problem>
     static std::vector<double> optimize(
         Problem& problem,
         size_t popSize,
