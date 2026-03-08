@@ -3,7 +3,7 @@
 #include <pybind11/numpy.h>
 
 #include "FlowShop/FlowShop.h"
-#include "Optimizer/DifferentialEvolution.h"
+#include "Optimizer/DifferentialEvolution/DifferentialEvolution.h"
 #include "Optimizer/ParticleSwarm.h"
 #include "ExperimentConfig.h"
 
@@ -154,7 +154,7 @@ PYBIND11_MODULE(_opti_py, m) {
                 return result;
             },
 
-            // Assign Default paramters
+            // Assign Default parameters
             py::arg("blocking") = false,
             py::arg("tardiness") = false,
             "Run the NEH heuristic and return a FlowShopResult"
@@ -170,7 +170,9 @@ PYBIND11_MODULE(_opti_py, m) {
                 size_t pop_size,
                 double f,
                 double cr,
-                unsigned long seed
+                unsigned long seed,
+                std::string& mutation,
+                std::string& crossover
             ) {
                 // Lambda to invoke cpp method
                 FlowShopResult result;
@@ -183,7 +185,9 @@ PYBIND11_MODULE(_opti_py, m) {
                         f,
                         cr,
                         max_gens,
-                        seed
+                        seed,
+                        mutation,
+                        crossover
                     );
                 } // Reacquire GIL
                 return result;
@@ -194,9 +198,11 @@ PYBIND11_MODULE(_opti_py, m) {
             py::arg("tardiness") = false,
             py::arg("max_gens") = 100,
             py::arg("pop_size") = 200,
-            py::arg("f") = 0.5,
-            py::arg("cr") = 0.9,    
-            py::arg("seed") = 108664UL
+            py::arg("f") = 0.8,
+            py::arg("cr") = 0.5,
+            py::arg("seed") = 108664UL,
+            py::arg("mutation") = "",
+            py::arg("crossover") = ""
         );
 
 
@@ -239,50 +245,6 @@ PYBIND11_MODULE(_opti_py, m) {
         .def_readwrite("seed", &ExperimentConfig::seed)
         .def_readwrite("max_iterations", &ExperimentConfig::maxIterations);
 
-
-
-
-    py::class_<DifferentialEvolution>(m, "DifferentialEvolution")
-        .def(py::init<
-                const ExperimentConfig&,
-                double,
-                double,
-                int,
-                std::string,
-                std::string
-            >(),
-            py::arg("config"),
-            py::arg("scale") = 0.9,
-            py::arg("crossover_rate") = 0.6,
-            py::arg("pop_size") = 200,
-            py::arg("mutation") = "rand1",
-            py::arg("crossover") = "bin"
-        )
-
-        .def("optimize",
-            [](DifferentialEvolution &de) {
-                std::vector<double> result;
-
-                // Release the GIL while running C++ code
-                {
-                    py::gil_scoped_release release;
-                    result = de.optimize();
-                }
-
-                // GIL automatically reacquired
-                return py::array_t<double>(result.size(), result.data());
-            }
-        )
-        .def("get_best_fitness",
-            &DifferentialEvolution::getBestFitness
-        )
-        .def("get_fitnesses",
-            &DifferentialEvolution::getBestFitnesses
-        )
-        .def("get_best_solution",
-            &DifferentialEvolution::getBestSolution
-        );
-    
 
     py::class_<ParticleSwarm>(m, "ParticleSwarm")
         .def(py::init<
