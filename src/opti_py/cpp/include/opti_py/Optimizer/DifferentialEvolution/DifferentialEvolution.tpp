@@ -7,7 +7,7 @@
  * @tparam Problem Must satisfy the Evaluable concept
  */
 template<Evaluable Problem>
-std::vector<double> DE::optimize(
+std::vector<double> DifferentialEvolution::optimize(
     Problem& problem,
     size_t popSize,
     double f,

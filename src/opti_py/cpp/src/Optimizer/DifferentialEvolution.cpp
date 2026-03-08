@@ -1,115 +1,81 @@
-#include "Optimizer/DifferentialEvolution.h"
+#include "Optimizer/DifferentialEvolution/DifferentialEvolution.h"
 
 #include <limits>
 #include <stdexcept>
 
-#include "Optimizer/Mutation/AllMutations.h"
-#include "Optimizer/Crossover/AllCrossovers.h"
 
-
-std::vector<std::vector<double>> DifferentialEvolution::initPopulation() {
-    std::vector<std::vector<double>> pop(popSize);
-
-    for(int i = 0; i < popSize; i++) {
-        pop[i] = solutionBuilder->getRand();
-    }
-
-    return pop;
-}
-
-std::unique_ptr<Mutation> DifferentialEvolution::createMutation(
-    const std::string& name
+std::vector<size_t> DifferentialEvolution::getSubset(
+    size_t populationSize,
+    size_t subsetSize,
+    size_t source,
+    MersenneTwister& mt
 ) {
-    // Create mutation type
-    if(name == "rand1") 
-        return std::make_unique<Rand1>();
-    if(name == "rand2") 
-        return std::make_unique<Rand2>();
-    if(name == "best1") 
-        return std::make_unique<Best1>();
-    if(name == "best2") 
-        return std::make_unique<Best2>();
-    if(name == "randToBest1") 
-        return std::make_unique<RandBest1>(0.8);
+    std::vector<size_t> indices(populationSize - 1);
+    size_t idx = 0;
 
-    // Type not recognized
-    throw std::runtime_error("Unknown mutation strategy: " + name);
-}
-
-
-std::unique_ptr<Crossover> DifferentialEvolution::createCrossover(
-    const std::string& name
-) {
-    if(name == "bin")
-        return std::make_unique<BinCrossover>();
-    else if 
-    (name == "exp")
-        return std::make_unique<ExpCrossover>();
-    else
-        throw std::runtime_error("Unknown crossover strategy");
-}
-
-
-
-std::vector<double> DifferentialEvolution::optimize() {
-    // Allocate memory to store best fitness per iteration
-    bestFitnesses.resize(maxIterations, std::numeric_limits<double>::max());
-
-    // Randomly initialize population
-    std::vector<std::vector<double>> pop = initPopulation();
-    
-    // Stores initial fitness values
-    std::vector<double> fitness(popSize);
-
-    int bestIdx = 0;
-    
-    // Store initial fitnesses
-    for(int i = 0; i < popSize; i++) {
-        fitness[i] = problem->evaluate(pop[i]);
-
-        if(fitness[i] < fitness[bestIdx])
-            bestIdx = i;
-    }
-
-    // Track best vector
-    double bestFitness = fitness[bestIdx];
-    
-    for(int i = 0; i < maxIterations; i++) {
-        // Temporarily stores new population
-        std::vector<std::vector<double>> genLockPop = pop;
-        int genBestIdx = bestIdx;
-
-        // Calculate fitnesses for initial population
-        for(int j = 0; j < popSize; j++) {
-            // Get mutated vector
-            std::vector<double> mutated =
-                mutStrat->mutate(pop, j, scale, genLockPop[genBestIdx], *solutionBuilder);
-                
-            // Create crossover vector
-            crossStrat->crossover(pop[j], mutated, crossover, *solutionBuilder);
-
-            // Calculate fitness of original and trial vectors
-            double trialFitness = problem->evaluate(pop[j]);
-
-            // Restore old solution
-            if(fitness[j] < trialFitness) {
-                pop[j] = genLockPop[j];
-            } else { // Replace old solution
-                fitness[j] = trialFitness;
-                
-                // Update best fitness
-                if(trialFitness < bestFitness) {
-                    bestFitness = trialFitness;
-                    bestIdx = j;
-                    bestSolution = pop[j];
-                }
-            }
+    // Prepare vector of all valid indices except source
+    for(size_t i = 0; i < populationSize; i++) {
+        if (i != source) {
+            indices[idx] = i;
+            ++idx;
         }
-
-        bestFitnesses[i] = bestFitness;
     }
 
+    // Partial Fisher-Yates shuffle to select subsetSize random indices
+    for(size_t i = 0; i < subsetSize; i++) {
+        int j = i + (mt.genrand_int32() % (indices.size() - i));
+        std::swap(indices[i], indices[j]);
+    }
 
-    return bestFitnesses;
+    // Return only the first 'subsetSize' indices
+    indices.resize(subsetSize);
+    return indices;
+}
+
+void DifferentialEvolution::crossover(
+    std::vector<double>& target,
+    const std::vector<double>& mutant,
+    double cr,
+    MersenneTwister& mt
+) {
+    int jrand = mt.genrand_int32() % target.size();
+
+    for(size_t i = 0; i < target.size(); i++) {
+        if (i == jrand || mt.genrand_real() < cr)
+            target[i] = mutant[i];
+    }
+}
+
+
+void DifferentialEvolution::clampValue(
+    double& value, 
+    double lowerBound, 
+    double upperBound
+) {
+    if(value < lowerBound)
+        value = lowerBound;
+    else if(value > upperBound)
+        value = upperBound;
+}
+
+
+std::vector<double> DifferentialEvolution::mutate(
+    const std::vector<std::vector<double>>& population,
+    const std::vector<size_t>& subset,
+    double f,
+    double lowerBound,
+    double upperBound
+) {
+    std::vector<double> mutant(population[0].size());
+
+    // Create mutated vector
+    for(size_t i = 0; i < mutant.size(); i++) {
+        mutant[i] = population[subset[1]][i] - population[subset[2]][i];
+        mutant[i] *= f;
+        mutant[i] += population[subset[0]][i];
+        clampValue(mutant[i], lowerBound, upperBound);
+    }
+
+    return mutant;
 }
 

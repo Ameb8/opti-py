@@ -1,15 +1,15 @@
-#ifndef DE_H
-#define DE_H
+#ifndef DIFFERENTIAL_EVOLUTION_H
+#define DIFFERENTIAL_EVOLUTION_H
 
 #include <vector>
 #include <cstddef>
 #include "External/mt.h"
 #include "Evaluable.h"
 
-class DE {
+class DifferentialEvolution {
 public:
-    DE() = default;
-    ~DE() = default;
+    DifferentialEvolution() = default;
+    ~DifferentialEvolution() = default;
 
     /**
      * @brief Select a random subset of indices from a population excluding the source index
@@ -95,6 +95,8 @@ public:
         unsigned long seed
     );
 };
+
+#include "Optimizer/DifferentialEvolution/DifferentialEvolution.tpp"
 
 
 #endif
