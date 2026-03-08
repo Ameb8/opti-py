@@ -1,7 +1,11 @@
 #ifndef RANDBEST1_H
 #define RANDBEST1_H
 
-#include "Optimizer/Mutation/Mutation.h"
+
+#include "Optimizer/DifferentialEvolution/Mutation/Mutation.h"
+
+#include <algorithm>
+
 
 class RandBest1 : public Mutation {
 private:
@@ -12,27 +16,29 @@ public:
 
     std::vector<double> mutate(
         const std::vector<std::vector<double>>& population,
-        int targetIndex,
+        size_t targetIndex,
         double F,
         const std::vector<double>& bestVector,
-        SolutionBuilder& builder
+        MersenneTwister& mt,
+        double lowerBound,
+        double upperBound
     ) override {
-        std::vector<int> subset =
-            builder.getSubset(population.size(), 2, targetIndex);
+        std::vector<size_t> subset = getSubset(population.size(), 2, targetIndex, mt);
 
+        // Get population subset        
         const auto& xi  = population[targetIndex];
         const auto& r1  = population[subset[0]];
         const auto& r2  = population[subset[1]];
 
         std::vector<double> mutated(xi.size());
 
-        for (int j = 0; j < mutated.size(); j++) {
-            mutated[j] =
-                xi[j]
-                + lambda_ * (bestVector[j] - xi[j])
-                + F * (r1[j] - r2[j]);
+        for (int i = 0; i < mutated.size(); i++) {
+            mutated[i] =
+                xi[i]
+                + lambda_ * (bestVector[i] - xi[i])
+                + F * (r1[i] - r2[i]);
 
-            mutated[j] = builder.checkBounds(mutated[j]);
+            mutated[i] = std::clamp(mutated[i], lowerBound, upperBound);
         }
 
         return mutated;
