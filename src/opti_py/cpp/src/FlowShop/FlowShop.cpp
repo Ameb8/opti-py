@@ -25,7 +25,7 @@ FlowShopResult FlowShop::runDE(
 
     // Perform DE optimization
     std::vector<double> bestSPV = DifferentialEvolution::optimize(
-        this,
+        *this,
         popSize,
         f,
         cr,
@@ -34,7 +34,7 @@ FlowShopResult FlowShop::runDE(
     );
 
     // Convert optimized SPV vector to job ordering
-    std::vector<size_t> jobOrder;
+    std::vector<size_t> jobOrder(bestSPV.size());
     spvToPerm(bestSPV, jobOrder);
 
     // Build and return FlowShopResult object
@@ -86,14 +86,14 @@ FlowShopResult FlowShop::buildResult(
     bool blocking,
     bool optimizeTardiness
 ) {
-    FlowShopResults result;
+    FlowShopResult result;
     result.sequence = jobOrder;
 
     // Create vector to store completions times of each job
     std::vector<std::vector<uint64_t>> completionTimes(num_jobs_, std::vector<uint64_t>(num_machines_));
 
     // Calculate each job's completion time
-    for(size_t i = 0; i < num_jobs; i++) {
+    for(size_t i = 0; i < num_jobs_; i++) {
         std::span<uint64_t> job = getJob(i, jobOrder);
         updateCompletions(job, completionTimes, i, blocking);
     }
@@ -113,22 +113,27 @@ std::vector<double> FlowShop::permToSPV(
     std::vector<double> spvVec(permutation.size());
     
     // Assign each job its permutation position
-    for(size_t i = 0; i < permutation.size(); i++)
-        spvVec[permutation[pos]] = static_cast<double>(pos);
+    for(size_t i = 0; i < permutation.size(); i++) {
+        spvVec[permutation[i]] = static_cast<double>(i);
+    }
 
     // Scale values from position to [-1, 1] SPV range
-    for(size_t i = 0; i < permutation.size(); i++)
-        spvVec[i] = -1.0 + 2.0 * spvVec[i] / (n - 1);
+    for(size_t i = 0; i < permutation.size(); i++) {
+        spvVec[i] = -1.0 + 2.0 * spvVec[i] / (permutation.size() - 1);
+    }
 
     return spvVec;
 }
 
-void spvToPerm(
+
+
+
+void FlowShop::spvToPerm(
     const std::vector<double>& spvVec,
     std::vector<size_t>& permutation
 ) {
     // Initialize permutations as index
-    for(size_t i = 0; i < n; i++)
+    for(size_t i = 0; i < spvVec.size(); i++)
         permutation[i] = i;
 
     // Perform argsort by SPV values
@@ -136,7 +141,10 @@ void spvToPerm(
         permutation.begin(),
         permutation.end(),
         [&](size_t a, size_t b) { // Comparator lambda
-            return spvVec[a] > spvVec[b];
+            if(spvVec[a] != spvVec[b])
+                return spvVec[a] > spvVec[b];
+
+            return a < b;
         }
     );
 }
@@ -155,13 +163,16 @@ void FlowShop::initPopulationVectors(
     // Generate random permutations in parallel
     #pragma omp parallel for
     for(size_t i = 1; i < population.size(); i++) {
+        // Initialize vector size
+        population[i].resize(num_jobs_);
+
         // Create pseudo-random generator each iteration
         MersenneTwister mt;
         mt.init_genrand(seed + i); // Seed deterministically
 
         // Create randomized SPV vector
         for(size_t j = 0; j < population[i].size(); j++)
-            population[i][j] = 2.0 * mt.random() - 1.0;
+            population[i][j] = 2.0 * mt.genrand_real1() - 1.0;
     }
 }
 
@@ -261,15 +272,15 @@ uint64_t FlowShop::evaluateSchedule(
     std::vector<std::vector<uint64_t>> completionTimes(num_jobs_, std::vector<uint64_t>(num_machines_));
 
     // Calculate each job's completion time
-    for(size_t i = 0; i < num_jobs; i++) {
+    for(size_t i = 0; i < num_jobs_; i++) {
         std::span<uint64_t> job = getJob(i, jobOrder);
         updateCompletions(job, completionTimes, i, blocking);
     }
 
     if(optimizeTardiness)
-        return calculateTardiness(completionTimes, jobOrder);
+        return calculateTotalTardiness(completionTimes, jobOrder);
 
-    return completionTimes[num_jobs_ - 1, num_machines_ - 1];
+    return completionTimes[num_jobs_ - 1][num_machines_ - 1];
 }
 
 
@@ -282,7 +293,7 @@ uint64_t FlowShop::calculateTotalTardiness(
     // Iterate through jobs
     for(size_t i = 0; i < num_jobs_; i++) {
         // Get job completion time
-        uint64_t completeTime = completionTimes[jobOrder[i]][num_machines_ - 1];
+        uint64_t completeTime = completionTimes[i][num_machines_ - 1];
 
         // Calculate job tardiness
         totalTardiness += completeTime - std::min(
@@ -303,7 +314,7 @@ std::vector<uint64_t> FlowShop::calculateTardiness(
     // Iterate through jobs
     for(size_t i = 0; i < num_jobs_; i++) {
         // Get job completion time
-        uint64_t completeTime = completionTimes[jobOrder[i]][num_machines_ - 1];
+        uint64_t completeTime = completionTimes[i][num_machines_ - 1];
 
         // Calculate job tardiness
         tardiness[i] = completeTime - std::min(
@@ -404,7 +415,7 @@ void FlowShop::argSortJobs(
 
 std::span<uint64_t> FlowShop::getJob(
     size_t jobNum,
-    std::vector<size_t>& jobOrder
+    const std::vector<size_t>& jobOrder
 ) {
     return { jobs_times_.data() + jobOrder[jobNum] * num_machines_, num_machines_ };
 }
@@ -422,7 +433,7 @@ void FlowShop::getInitialSolutions(std::vector<std::vector<double>>& population)
 
 double FlowShop::evaluateSolution(const std::vector<double>& solution) {
     // Convert SPV vector to job ordering
-    std::vector<size_t> permutation(n);
+    std::vector<size_t> permutation(solution.size());
     spvToPerm(solution, permutation);
 
     // Evaluate job ordering

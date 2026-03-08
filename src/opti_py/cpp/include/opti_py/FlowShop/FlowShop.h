@@ -106,6 +106,18 @@ public:
         size_t maxGenerations,
         unsigned long seed
     );
+
+    // EvaluateProblem interface (used by DE)
+    void initPopulationVectors(
+        std::vector<std::vector<double>>& population,
+        bool blocking,
+        bool optimizeTardiness,
+        unsigned long seed
+    );
+    void getInitialSolutions(std::vector<std::vector<double>>& population);
+    constexpr double getLowerBounds() const { return -1.0; }
+    constexpr double getUpperBounds() const { return 1.0; }
+    double evaluateSolution(const std::vector<double>& solution);
 private:
     // Problem inputs
     size_t num_jobs_; // rows
@@ -134,7 +146,7 @@ private:
     );
     std::span<uint64_t> getJob(
         size_t jobNum,
-        std::vector<size_t>& jobOrder
+        const std::vector<size_t>& jobOrder
     );
     void updateCompletions(
         const std::span<uint64_t> jobTimes,
@@ -151,11 +163,6 @@ private:
     );
 
     // Evaluation methods
-    uint64_t evaluateSchedule(
-        const std::vector<size_t>& jobOrder,
-        bool blocking,
-        bool optimizeTardiness
-    );
     std::vector<uint64_t> calculateTardiness(
         const std::vector<std::vector<uint64_t>>& completionTimes,
         const std::vector<size_t>& jobOrder
@@ -176,18 +183,6 @@ private:
         const std::vector<double>& spvVec,
         std::vector<size_t>& permutation
     );
-
-    // EvaluateProblem interface (used by DE)
-    void initPopulationVectors(
-        std::vector<std::vector<double>>& population,
-        bool blocking,
-        bool optimizeTardiness,
-        unsigned long seed
-    );
-    void getInitialSolutions(std::vector<std::vector<double>>& population);
-    constexpr double getLowerBounds() const { return -1.0; }
-    constexpr double getUpperBounds() const { return 1.0; }
-    double evaluateSolution(const std::vector<double>& solution);
 
 };
 
