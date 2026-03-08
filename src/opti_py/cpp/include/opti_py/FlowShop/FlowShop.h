@@ -1,7 +1,7 @@
 /**
  * @file FlowShop.h
  * @author Alex Buckley
- * @ingroup Flowshop
+ * @ingroup FlowShop
  * @brief Implementation of the flow shop scheduling problem.
  */
 
@@ -90,19 +90,42 @@ public:
         due_dates_ = std::move(new_data);
     }
 
-    // Optimize flowshop wiith NEH heurstic
+    // Optimize flow shop with NEH heuristic
     FlowShopResult runNEH(
         bool blocking = false, 
         bool optimizeTardiness = false
     );
 
+    // Optimize flow shop with Differential Evolution
+    FlowShopResult runDE(
+        bool blocking,
+        bool optimizeTardiness,
+        size_t popSize,
+        double f,
+        double cr,
+        size_t maxGenerations,
+        unsigned long seed
+    );
 private:
+    // Problem inputs
     size_t num_jobs_; // rows
     size_t num_machines_; // columns
     std::vector<uint64_t> jobs_times_; // row-major flattened
     std::vector<uint64_t> due_dates_;
 
-    // Helper methods
+    // State fields set during DE
+    bool blocking;
+    bool optimizeTardiness;
+    unsigned long seed;
+
+    // Produce results
+    FlowShopResult buildResult(
+        std::vector<size_t> jobOrder,
+        bool blocking,
+        bool optimizeTardiness
+    );
+
+    // NEH helper methods
     void computeRowSums(std::vector<uint64_t>& totalJobTimes);
     void argSortJobs(
         std::vector<uint64_t>& totalJobTimes,
@@ -126,6 +149,13 @@ private:
         bool blocking,
         bool optimizeTardiness
     );
+
+    // Evaluation methods
+    uint64_t evaluateSchedule(
+        const std::vector<size_t>& jobOrder,
+        bool blocking,
+        bool optimizeTardiness
+    );
     std::vector<uint64_t> calculateTardiness(
         const std::vector<std::vector<uint64_t>>& completionTimes,
         const std::vector<size_t>& jobOrder
@@ -139,6 +169,26 @@ private:
         bool blocking,
         bool optimizeTardiness
     );
+    
+    // SPV conversion helpers
+    std::vector<double> permToSPV(const std::vector<size_t>& permutation);
+    void spvToPerm(
+        const std::vector<double>& spvVec,
+        std::vector<size_t>& permutation
+    );
+
+    // EvaluateProblem interface (used by DE)
+    void initPopulationVectors(
+        std::vector<std::vector<double>>& population,
+        bool blocking,
+        bool optimizeTardiness,
+        unsigned long seed
+    );
+    void getInitialSolutions(std::vector<std::vector<double>>& population);
+    constexpr double getLowerBounds() const { return -1.0; }
+    constexpr double getUpperBounds() const { return 1.0; }
+    double evaluateSolution(const std::vector<double>& solution);
+
 };
 
 #endif

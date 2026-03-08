@@ -5,6 +5,45 @@
 #include <omp.h>
 
 #include "External/mt.h"
+#include "Optimizer/DifferentialEvolution/DifferentialEvolution.h"
+
+
+
+FlowShopResult FlowShop::runDE(
+    bool blocking, 
+    bool optimizeTardiness,
+    size_t popSize,
+    double f,
+    double cr,
+    size_t maxGenerations,
+    unsigned long seed
+) {
+    // Assign fields needed during DE optimization
+    this->blocking = blocking;
+    this->optimizeTardiness = optimizeTardiness;
+    this->seed = seed;
+
+    // Perform DE optimization
+    std::vector<double> bestSPV = DifferentialEvolution::optimize(
+        this,
+        popSize,
+        f,
+        cr,
+        maxGenerations,
+        seed
+    );
+
+    // Convert optimized SPV vector to job ordering
+    std::vector<size_t> jobOrder;
+    spvToPerm(bestSPV, jobOrder);
+
+    // Build and return FlowShopResult object
+    return buildResult(
+        jobOrder,
+        blocking,
+        optimizeTardiness
+    );
+}
 
 
 FlowShopResult FlowShop::runNEH(bool blocking, bool optimizeTardiness) {
@@ -38,6 +77,32 @@ FlowShopResult FlowShop::runNEH(bool blocking, bool optimizeTardiness) {
         calculateTardiness(completionTimes, jobOrder)
     };
     
+    return result;
+}
+
+
+FlowShopResult FlowShop::buildResult(
+    std::vector<size_t> jobOrder,
+    bool blocking,
+    bool optimizeTardiness
+) {
+    FlowShopResults result;
+    result.sequence = jobOrder;
+
+    // Create vector to store completions times of each job
+    std::vector<std::vector<uint64_t>> completionTimes(num_jobs_, std::vector<uint64_t>(num_machines_));
+
+    // Calculate each job's completion time
+    for(size_t i = 0; i < num_jobs; i++) {
+        std::span<uint64_t> job = getJob(i, jobOrder);
+        updateCompletions(job, completionTimes, i, blocking);
+    }
+
+    // Assign final optimization results
+    result.completionTimes = completionTimes;
+    result.makespan = completionTimes[num_jobs_ - 1][num_machines_ - 1];
+    result.tardiness = calculateTardiness(completionTimes, jobOrder);
+
     return result;
 }
 
@@ -98,187 +163,6 @@ void FlowShop::initPopulationVectors(
         for(size_t j = 0; j < population[i].size(); j++)
             population[i][j] = 2.0 * mt.random() - 1.0;
     }
-}
-
-
-std::vector<size_t> FlowShop::getSubset(
-    size_t populationSize,
-    size_t subsetSize,
-    size_t source,
-    MersenneTwister& mt
-) {
-    std::vector<size_t> indices(populationSize - 1);
-    size_t idx = 0;
-
-    // Prepare vector of all valid indices except source
-    for(size_t i = 0; i < populationSize; i++) {
-        if (i != source) {
-            indices[idx] = i;
-            ++idx;
-        }
-    }
-
-    // Partial Fisher-Yates shuffle to select subsetSize random indices
-    for(size_t i = 0; i < subsetSize; i++) {
-        int j = i + (mt.genrand_int32() % (indices.size() - i));
-        std::swap(indices[i], indices[j]);
-    }
-
-    // Return only the first 'subsetSize' indices
-    indices.resize(subsetSize);
-    return indices;
-}
-
-void FlowShop::clampValue(ddouble& val) {
-    if(val < -1.0)
-        val = 1.0
-    else if(val > 1.0)
-        val = 1.0
-}
-
-std::vector<double> mutate(
-    const std::vector<std::vector<double>>& population,
-    const std::vector<size_t>& subset,
-    int targetIndex,
-    double f,
-) {
-    std::vector<double> mutated(population[targetIndex].size());
-
-    // Create mutated vector
-    for(int i = 0; i < mutated.size(); i++) {
-        mutated[i] = population[subset[1]][i] - population[subset[2]][i];
-        mutated[i] *= f;
-        mutated[i] += population[subset[0]][i];
-        mutated[i].clampValue();
-    }
-
-    return mutated;
-}
-
-void FlowShop::crossover(
-    std::vector<double>& target,
-    const std::vector<double>& mutant,
-    double cr,
-    MersenneTwister& mt
-) {
-    int jrand = builder.randNum(0, target.size());
-
-    for(int i = 0; i < target.size(); i++) {
-        if (i == jrand || x + mt.genrand_real() % (y - x) < CR)
-            target[i] = mutant[i];
-    }
-}
-
-
-FlowShopResult FlowShop::runDE(
-    size_t popSize,
-    double f,
-    double cr,
-    size_t maxGenerations,
-    bool blocking,
-    bool optimizeTardiness,
-    unsigned long seed
-) {
-    // Generate random initial population with 1 NEH permutation
-    std::vector<std::vector<double>> population(popSize);
-    initPopulation(
-        population,
-        blocking,
-        optimizeTardiness,
-        seed
-    )
-
-    // Stores permutation population representations
-    std::vector<std::vector<double>> permutations(popSize);
-
-    // Stores rank of each population member (makespan or tardiness)
-    std::vector<uint64_t> solutionRanks(,
-        popSize,
-        std::numeric_limits<uint64_t>::max();
-    );
-
-    // Track global best solution
-    size_t globalBestIdx;
-    uint64_t globalBestRank = std::numeric_limits<uint64_t>::max();
-
-
-    // Calculate permutations and rank for initial population
-    // Parallelize with OpenMP
-    #pragma omp parallel {
-        // Best solution found per thread
-        uint64_t threadBestRank = -std::numeric_limits<uint64_t>::infinity();
-        size_t threadBestIdx = 0;
-
-        // Calculate permutation and rank in parallel
-        #pragma omp for
-        for(size_t i = 0; i < popSize; i++) {
-            // Calculate permutation and rank
-            permutations[i] = spvToPerm(population[i]);
-            solutionRanks[i] = evaluateSchedule(
-                permutations[i],
-                blocking,
-                optimizeTardiness
-            )
-
-            // Compare solution to thread best
-            if(solutionRanks[i] < thread_max) {
-                // Update thread best
-                threadBestRank = solutionRanks[i];
-                threadBestIdx = i;
-            }
-        }
-
-        // Perform reduction to calculate global best solution
-        #pragma omp critical {
-            // Compare thread best to global best
-            if(threadBestRank < globalBestRank) {
-                // Update global best
-                globalBestRank = threadBestRank;
-                globalBestIdx = threadBestIdx;
-            }
-        }
-    }
-
-    // Store temporary population during generation updates
-    std::vector<std::vector<double>> newPopulation;
-    std::vector<std::vector<size_t>> newPermutations;
-    std::vector<size_t>> newSolutionRanks;
-
-
-    for(size_t i = 0; i < maxGenerations; i++) {
-        // Copy generation's initial population
-        newPopulation = population;
-
-        for(size_t j = 0; j < popSize; j++) {
-            // Create RNG seeded for each iteration
-            MersenneTwister mt;
-            mt.init_genrand(seed + i); // Ensure determinissm
-
-            // Select 3 distinct solutions
-            std::vector<size_t> solutionIndexes = getSubset(popSize, 3, j, mt);
-
-            // Generate mutant vector
-            std::vector<double> mutated = mutate(
-                population,
-                solutionIndexes,
-                i,
-                f
-            )
-
-            // Generate Trial vector
-            crossover(newPopulation[i], mutant, cr, mt);
-
-            // Convert trial vector to permutation
-
-            // Calculate permutation ranking
-
-            // Perform greedy replacement
-
-            // Update global best
-        }
-    }
-    
-    
 }
 
 
@@ -523,4 +407,28 @@ std::span<uint64_t> FlowShop::getJob(
     std::vector<size_t>& jobOrder
 ) {
     return { jobs_times_.data() + jobOrder[jobNum] * num_machines_, num_machines_ };
+}
+
+// <Evaluate Problem> template implementation
+
+void FlowShop::getInitialSolutions(std::vector<std::vector<double>>& population) {
+    initPopulationVectors(
+        population,
+        blocking,
+        optimizeTardiness,
+        seed
+    );
+}
+
+double FlowShop::evaluateSolution(const std::vector<double>& solution) {
+    // Convert SPV vector to job ordering
+    std::vector<size_t> permutation(n);
+    spvToPerm(solution, permutation);
+
+    // Evaluate job ordering
+    return static_cast<double>(evaluateSchedule(
+        permutation,
+        blocking,
+        optimizeTardiness
+    ));
 }
