@@ -40,12 +40,14 @@ public:
         size_t maxGenerations,
         size_t popSize,
         unsigned long seed,
+        size_t dimensions,
         std::string& mutationStrategy,
         std::string& crossoverStrategy
     ) {
         // Create problem
         std::shared_ptr<Problem> problem = create(id);
         problem->setSeed(seed);
+        problem->setDimensions(dimensions);
 
         // Optimize problem
         return DifferentialEvolution::optimize(

@@ -3,7 +3,7 @@
 #include <limits>
 #include <omp.h>
 
-#include "OptResult.h"
+#include "Optimizer/OptResult.h"
 
 /**
  * @tparam Problem Must satisfy the Evaluable concept
@@ -29,7 +29,7 @@ OptResult DifferentialEvolution::optimize(
 
     // Create results container
     OptResult result;
-    result.bestFitnesses.reserve(maxGenerations);
+    result.bestFitnesses.resize(maxGenerations);
 
 
     // Get bounds for problem
@@ -145,12 +145,11 @@ OptResult DifferentialEvolution::optimize(
                 if(threadBestFitness < globalBestFitness) {
                     globalBestFitness = threadBestFitness;
                     globalBestIdx = threadBestIdx;
-
-                    // Update iteration-best fitness
-                    results.bestFitnesses[i] = globalBestFitness;
                 }
             }
         }
+        // Update iteration-best fitness
+        result.bestFitnesses[i] = globalBestFitness;
 
         // Update new population
         population = newPopulation;
@@ -158,9 +157,9 @@ OptResult DifferentialEvolution::optimize(
     }
 
     // Update results
-    results.bestSolution = population[globalBestIdx];
-    results.bestFitness = globalBestFitness;
+    result.bestSolution = population[globalBestIdx];
+    result.bestFitness = globalBestFitness;
 
 
-    return population[globalBestIdx];
+    return result;
 }

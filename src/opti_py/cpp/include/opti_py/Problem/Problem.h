@@ -26,6 +26,7 @@ protected:
     const double lowerBound;  ///< Lower bound of the search space
     const double upperBound;  ///< Upper bound of the search space
     const std::string name;   ///< Name of the benchmark function
+    size_t dimensions;
     unsigned long seed = 0;
 
 public:
@@ -60,8 +61,8 @@ public:
         MersenneTwister mt;
         mt.init_genrand(seed);
 
-        #pragma omp parallel for
         for(int i = 0; i < population.size(); i++) {
+            population[i].resize(dimensions);
             for(int j = 0; j < population[i].size(); j++) {
                 population[i][j] = lowerBound + (upperBound - lowerBound) * mt.genrand_real1();
             }
@@ -86,6 +87,10 @@ public:
 
     void setSeed(unsigned long s) {
         seed = s;
+    }
+
+    void setDimensions(size_t dims) {
+        dimensions = dims;
     }
 
 
