@@ -10,6 +10,9 @@
 #define PROBLEM_H
 
 #include <vector>
+#include <omp.h>
+
+#include "External/mt.h"
 
 /**
  * @class Problem
@@ -23,6 +26,7 @@ protected:
     const double lowerBound;  ///< Lower bound of the search space
     const double upperBound;  ///< Upper bound of the search space
     const std::string name;   ///< Name of the benchmark function
+    unsigned long seed = 0;
 
 public:
     /**
@@ -48,6 +52,22 @@ public:
      */
     virtual double evaluate(const std::vector<double>& x) const = 0;
 
+    double evaluateSolution(std::vector<double>& solution) {
+        return evaluate(solution);
+    }
+
+    void getInitialSolutions(std::vector<std::vector<double>>& population) {
+        MersenneTwister& mt;
+        mt.init_genrand(seed);
+
+        #pragma omp parallel for
+        for(int i = 0; i < population.size(); i++) {
+            for(int j = 0; j < population[i].size(); j++) {
+                population[i][j] = lowerBound + (upperBound - lowerBound) * mt.genrand_real1();
+            }
+        }
+    }
+
     /** @name Accessors */
     ///@{
 
@@ -59,6 +79,15 @@ public:
 
     /** @return The name of the benchmark function. */
     const std::string getName() const { return name; }
+
+    unsigned long getSeed() const {
+        return seed;
+    }
+
+    void setSeed(unsigned long s) {
+        seed = s;
+    }
+
 
     ///@}
 };

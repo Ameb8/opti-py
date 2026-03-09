@@ -9,6 +9,7 @@
 #define PROBLEM_FACTORY_H
 
 #include "Problem/Problem.h"
+#include "Optimizer/DifferentialEvolution/DifferentialEvolution.h"
 #include <array>
 #include <memory>
 #include <stdexcept>
@@ -26,6 +27,32 @@ public:
      * @throws std::invalid_argument if the ID does not match a known problem.
      */
     static std::shared_ptr<Problem> create(int id);
+    
+
+    static std::vector<double> optimizeDE(
+        int id,
+        double f,
+        double cr,
+        size_t maxGenerations,
+        unsigned long seed,
+        std::string& mutationStrategy,
+        std::string& crossoverStrategy
+    ) {
+        // Create problem
+        std::shared_ptr<Problem> problem = create(id);
+        problem->setSeed(seed);
+        
+        return DifferentialEvolution::optimizeO(
+            *problem,
+            popSize,
+            f,
+            cr,
+            maxGenerations,
+            seed,
+            mutationStrategy,
+            crossoverStrategy
+        );
+    }
 };
 
 
