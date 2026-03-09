@@ -5,6 +5,7 @@
 #include "FlowShop/FlowShop.h"
 #include "Optimizer/DifferentialEvolution/DifferentialEvolution.h"
 #include "Optimizer/ParticleSwarm.h"
+#include "Optimizer.OptResult.h"
 #include "ProblemFactory.h"
 #include "Problem/ProblemResult.h"
 #include "ExperimentConfig.h"
@@ -222,6 +223,19 @@ PYBIND11_MODULE(_opti_py, m) {
             return d;
         });
 
+    py::class_<OptResult>(m, "OptResult")
+        .def_readwrite("bestSolution", &OptResult::bestSolution)
+        .def_readwrite("bestFitnesses", &OptResult::bestFitnesses)
+        .def_readwrite("bestFitness", &OptResult::bestFitness) 
+        .def("to_dict", [](const OptResult &r) {
+            py::dict d;
+            d["bestSolution"] = r.bestSolution;
+            d["bestFitnesses"] = r.bestFitnesses;
+            d["bestFitness"] = r.bestFitness;
+            return d;
+        });
+    
+
     py::class_<ProblemResult>(m, "ProblemResult")
         .def_readwrite("solution", &ProblemResult::solution)
         .def_readwrite("fitness", &ProblemResult::fitness)
@@ -293,7 +307,7 @@ PYBIND11_MODULE(_opti_py, m) {
             std::string mutation_strategy,
             std::string crossover_strategy
         ) {
-            ProblemResult result;
+            OptResult result;
             {
                 py::gil_scoped_release release;
                 result = ProblemFactory::optimizeDE(

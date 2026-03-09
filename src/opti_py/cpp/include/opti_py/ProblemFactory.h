@@ -10,6 +10,7 @@
 
 #include "Problem/Problem.h"
 #include "Optimizer/DifferentialEvolution/DifferentialEvolution.h"
+#include "Optimizer/OptResult.h"
 #include "Problem/ProblemResult.h"
 
 #include <array>
@@ -32,7 +33,7 @@ public:
     static std::shared_ptr<Problem> create(int id);
 
 
-    static inline ProblemResult optimizeDE(
+    static inline OptResult optimizeDE(
         int id,
         double f,
         double cr,
@@ -46,11 +47,8 @@ public:
         std::shared_ptr<Problem> problem = create(id);
         problem->setSeed(seed);
 
-        // Object to store result
-        ProblemResult result;
-        
         // Optimize problem
-        result.solution = DifferentialEvolution::optimize(
+        return DifferentialEvolution::optimize(
             *problem,
             popSize,
             f,
@@ -60,11 +58,6 @@ public:
             mutationStrategy,
             crossoverStrategy
         );
-
-        // Calculate final fitness
-        result.fitness = problem->evaluate(result.solution);
-
-        return result;
     }
 };
 
