@@ -9,6 +9,7 @@
 #include "Optimizer/DifferentialEvolution/Mutation/AllMutations.h"
 #include "Optimizer/DifferentialEvolution/Crossover/Crossover.h"
 #include "Optimizer/DifferentialEvolution/Crossover/AllCrossovers.h"
+#include "Optimizer/OptResult.h"
 
 
 
@@ -77,7 +78,7 @@ public:
      * @return std::vector<double> Best solution found
      */
     template<Evaluable Problem>
-    static std::vector<double> optimize(
+    static OptResult optimize(
         Problem& problem,
         size_t popSize,
         double f,

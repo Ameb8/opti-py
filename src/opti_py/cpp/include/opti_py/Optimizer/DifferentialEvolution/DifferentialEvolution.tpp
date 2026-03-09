@@ -3,11 +3,13 @@
 #include <limits>
 #include <omp.h>
 
+#include "OptResult.h"
+
 /**
  * @tparam Problem Must satisfy the Evaluable concept
  */
 template<Evaluable Problem>
-std::vector<double> DifferentialEvolution::optimize(
+OptResult DifferentialEvolution::optimize(
     Problem& problem,
     size_t popSize,
     double f,
@@ -24,6 +26,11 @@ std::vector<double> DifferentialEvolution::optimize(
     // Get initial population
     std::vector<std::vector<double>> population(popSize);
     problem.getInitialSolutions(population);
+
+    // Create results container
+    OptResult result;
+    result.bestFitnesses.reserve(maxGenerations);
+
 
     // Get bounds for problem
     double lower = problem.getLowerBounds();
@@ -138,6 +145,9 @@ std::vector<double> DifferentialEvolution::optimize(
                 if(threadBestFitness < globalBestFitness) {
                     globalBestFitness = threadBestFitness;
                     globalBestIdx = threadBestIdx;
+
+                    // Update iteration-best fitness
+                    results.bestFitnesses[i] = globalBestFitness;
                 }
             }
         }
@@ -146,6 +156,11 @@ std::vector<double> DifferentialEvolution::optimize(
         population = newPopulation;
         solutionFitnesses = newSolutionFitnesses;
     }
+
+    // Update results
+    results.bestSolution = population[globalBestIdx];
+    results.bestFitness = globalBestFitness;
+
 
     return population[globalBestIdx];
 }
