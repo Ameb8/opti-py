@@ -13,6 +13,19 @@ endif()
 
 find_package(pybind11 REQUIRED)
 
+# Find OpenMP on MacOS
+if(APPLE)
+    execute_process(
+        COMMAND brew --prefix libomp
+        OUTPUT_VARIABLE OpenMP_ROOT
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+endif()
+
+# Optionally find OpenMP
+find_package(OpenMP)
+
+
 # Include header files
 include_directories(src/opti_py/cpp/include/opti_py)
 
@@ -26,6 +39,13 @@ list(APPEND CPP_SOURCES src/opti_py/cpp/bindings.cpp)
 
 # Build the Python module
 pybind11_add_module(_opti_py ${CPP_SOURCES})
+
+# If OpenMP exists, enable it
+if(OpenMP_CXX_FOUND)
+    target_link_libraries(_opti_py PRIVATE OpenMP::OpenMP_CXX)
+    target_compile_definitions(_opti_py PRIVATE OPTI_PY_OPENMP)
+endif()
+
 
 # CPP compiler flags
 target_compile_options(_opti_py PRIVATE
