@@ -26,7 +26,7 @@ FlowShopResult FlowShop::runDE(
     this->seed = seed;
 
     // Perform DE optimization
-    std::vector<double> bestSPV = DifferentialEvolution::optimize(
+    OptResult result = DifferentialEvolution::optimize(
         *this,
         popSize,
         f,
@@ -38,8 +38,8 @@ FlowShopResult FlowShop::runDE(
     );
 
     // Convert optimized SPV vector to job ordering
-    std::vector<size_t> jobOrder(bestSPV.size());
-    spvToPerm(bestSPV, jobOrder);
+    std::vector<size_t> jobOrder(result.bestSolution.size());
+    spvToPerm(result.bestSolution, jobOrder);
 
     // Build and return FlowShopResult object
     return buildResult(
