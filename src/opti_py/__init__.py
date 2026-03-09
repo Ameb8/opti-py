@@ -5,7 +5,7 @@ from ._opti_py import (
     FlowShop,
     FlowShopResult,
     optimize_de,
-    ProblemResult
+    OptResult
 )
 
 # Expose problem ID mapping Enum

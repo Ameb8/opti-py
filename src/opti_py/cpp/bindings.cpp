@@ -5,7 +5,7 @@
 #include "FlowShop/FlowShop.h"
 #include "Optimizer/DifferentialEvolution/DifferentialEvolution.h"
 #include "Optimizer/ParticleSwarm.h"
-#include "Optimizer.OptResult.h"
+#include "Optimizer/OptResult.h"
 #include "ProblemFactory.h"
 #include "Problem/ProblemResult.h"
 #include "ExperimentConfig.h"
@@ -224,14 +224,14 @@ PYBIND11_MODULE(_opti_py, m) {
         });
 
     py::class_<OptResult>(m, "OptResult")
-        .def_readwrite("bestSolution", &OptResult::bestSolution)
-        .def_readwrite("bestFitnesses", &OptResult::bestFitnesses)
-        .def_readwrite("bestFitness", &OptResult::bestFitness) 
+        .def_readwrite("solution", &OptResult::bestSolution)
+        .def_readwrite("fitnesses", &OptResult::bestFitnesses)
+        .def_readwrite("fitness", &OptResult::bestFitness) 
         .def("to_dict", [](const OptResult &r) {
             py::dict d;
-            d["bestSolution"] = r.bestSolution;
-            d["bestFitnesses"] = r.bestFitnesses;
-            d["bestFitness"] = r.bestFitness;
+            d["solution"] = r.bestSolution;
+            d["fitnesses"] = r.bestFitnesses;
+            d["fitness"] = r.bestFitness;
             return d;
         });
     
@@ -304,6 +304,7 @@ PYBIND11_MODULE(_opti_py, m) {
             size_t max_generations,
             size_t pop_size,
             unsigned long seed,
+            size_t dimensions,
             std::string mutation_strategy,
             std::string crossover_strategy
         ) {
@@ -317,6 +318,7 @@ PYBIND11_MODULE(_opti_py, m) {
                     max_generations,
                     pop_size,
                     seed,
+                    dimensions,
                     mutation_strategy,
                     crossover_strategy
                 );
@@ -329,6 +331,7 @@ PYBIND11_MODULE(_opti_py, m) {
         py::arg("max_generations") = 1000,
         py::arg("pop_size") = 200,
         py::arg("seed") = 108664UL,
+        py::arg("dimensions") = 30,
         py::arg("mutation_strategy") = "",
         py::arg("crossover_strategy") = ""
     );
