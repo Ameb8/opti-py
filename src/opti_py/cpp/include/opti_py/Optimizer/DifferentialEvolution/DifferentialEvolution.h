@@ -56,7 +56,7 @@ public:
      * @param cr Crossover rate
      * @param mt Random number generator
      */
-    static void crossover(
+    static inline void crossover(
         std::vector<double>& target,
         const std::vector<double>& mutant,
         double cr,

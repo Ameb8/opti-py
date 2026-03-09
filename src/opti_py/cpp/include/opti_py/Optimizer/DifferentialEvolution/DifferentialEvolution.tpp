@@ -37,7 +37,7 @@ std::vector<double> DifferentialEvolution::optimize(
 
     // Create mutation and crossover objects
     std::unique_ptr<Mutation> mutation = createMutation(mutationStrategy);
-    //std::unique_ptr<Crossover> crossover = createCrossover(crossoverStrategy);
+    std::unique_ptr<Crossover> crossover = createCrossover(crossoverStrategy);
 
     // Stores fitness of each solution
     std::vector<double> solutionFitnesses(popSize);
@@ -115,7 +115,7 @@ std::vector<double> DifferentialEvolution::optimize(
                 );
 
                 // Generate Trial vector
-                crossover(newPopulation[j], mutant, cr, mt);
+                crossover->crossover(newPopulation[j], mutant, cr, mt);
 
                 // Get trial fitnesses
                 newSolutionFitnesses[j] = problem.evaluateSolution(newPopulation[j]);

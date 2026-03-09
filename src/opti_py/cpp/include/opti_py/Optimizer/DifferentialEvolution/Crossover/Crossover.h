@@ -3,7 +3,7 @@
 
 #include <vector>
 
-#include "SolutionBuilder.h"
+#include "External/mt.h"
 
 class Crossover {
 public:
@@ -12,8 +12,8 @@ public:
     virtual void crossover(
         std::vector<double>& target,
         const std::vector<double>& mutant,
-        double CR,
-        SolutionBuilder& builder
+        double cr,
+        MersenneTwister& mt
     ) = 0;
 };
 

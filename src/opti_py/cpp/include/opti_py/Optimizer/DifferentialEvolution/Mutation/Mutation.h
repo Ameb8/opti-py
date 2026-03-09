@@ -2,6 +2,7 @@
 #define MUTATION_H
 
 #include <vector>
+#include <cstddef>
 
 #include "External/mt.h"
 
