@@ -52,12 +52,12 @@ public:
      */
     virtual double evaluate(const std::vector<double>& x) const = 0;
 
-    double evaluateSolution(std::vector<double>& solution) {
+    double evaluateSolution(const std::vector<double>& solution) {
         return evaluate(solution);
     }
 
     void getInitialSolutions(std::vector<std::vector<double>>& population) {
-        MersenneTwister& mt;
+        MersenneTwister mt;
         mt.init_genrand(seed);
 
         #pragma omp parallel for
@@ -72,10 +72,10 @@ public:
     ///@{
 
     /** @return The lower boundary of the search space. */
-    double getLowerBound() const { return lowerBound; }
+    double getLowerBounds() const { return lowerBound; }
 
     /** @return The upper boundary of the search space. */
-    double getUpperBound() const { return upperBound; }
+    double getUpperBounds() const { return upperBound; }
 
     /** @return The name of the benchmark function. */
     const std::string getName() const { return name; }

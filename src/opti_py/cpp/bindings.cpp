@@ -5,6 +5,8 @@
 #include "FlowShop/FlowShop.h"
 #include "Optimizer/DifferentialEvolution/DifferentialEvolution.h"
 #include "Optimizer/ParticleSwarm.h"
+#include "ProblemFactory.h"
+#include "Problem/ProblemResult.h"
 #include "ExperimentConfig.h"
 
 namespace py = pybind11;
@@ -220,7 +222,15 @@ PYBIND11_MODULE(_opti_py, m) {
             return d;
         });
 
-
+    py::class_<ProblemResult>(m, "ProblemResult")
+        .def_readwrite("solution", &ProblemResult::solution)
+        .def_readwrite("fitness", &ProblemResult::fitness)
+        .def("to_dict", [](const ProblemResult &r) {
+            py::dict d;
+            d["solution"] = r.solution;
+            d["fitness"] = r.fitness;
+            return d; 
+        });
 
     py::class_<ExperimentConfig>(m, "ExperimentConfig")
         .def(py::init<
@@ -271,4 +281,41 @@ PYBIND11_MODULE(_opti_py, m) {
         .def("get_best_fitness", &ParticleSwarm::getBestFitness)
         .def("get_fitnesses", &ParticleSwarm::getBestFitnesses)
         .def("get_best_solution", &ParticleSwarm::getBestSolution);
+
+    m.def("optimize_de",
+        [](
+            int problem_id,
+            double f,
+            double cr,
+            size_t max_generations,
+            size_t pop_size,
+            unsigned long seed,
+            std::string mutation_strategy,
+            std::string crossover_strategy
+        ) {
+            ProblemResult result;
+            {
+                py::gil_scoped_release release;
+                result = ProblemFactory::optimizeDE(
+                    problem_id,
+                    f,
+                    cr,
+                    max_generations,
+                    pop_size,
+                    seed,
+                    mutation_strategy,
+                    crossover_strategy
+                );
+            }
+            return result;
+        },
+        py::arg("problem_id") = 1,
+        py::arg("f") = 0.8,
+        py::arg("cr") = 0.5,
+        py::arg("max_generations") = 1000,
+        py::arg("pop_size") = 200,
+        py::arg("seed") = 108664UL,
+        py::arg("mutation_strategy") = "",
+        py::arg("crossover_strategy") = ""
+    );
 }
