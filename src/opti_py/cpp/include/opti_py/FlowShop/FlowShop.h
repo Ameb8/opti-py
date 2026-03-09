@@ -104,7 +104,9 @@ public:
         double f,
         double cr,
         size_t maxGenerations,
-        unsigned long seed
+        unsigned long seed,
+        std::string& mutationStrategy,
+        std::string& crossoverStrategy 
     );
 
     // EvaluateProblem interface (used by DE)

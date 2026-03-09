@@ -16,7 +16,9 @@ FlowShopResult FlowShop::runDE(
     double f,
     double cr,
     size_t maxGenerations,
-    unsigned long seed
+    unsigned long seed,
+    std::string& mutationStrategy,
+    std::string& crossoverStrategy
 ) {
     // Assign fields needed during DE optimization
     this->blocking = blocking;
@@ -30,7 +32,9 @@ FlowShopResult FlowShop::runDE(
         f,
         cr,
         maxGenerations,
-        seed
+        seed,
+        mutationStrategy,
+        crossoverStrategy
     );
 
     // Convert optimized SPV vector to job ordering
