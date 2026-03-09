@@ -2,6 +2,9 @@
 #define FLOW_SHOP_RESULT_H
 
 #include <vector>
+#include <cstddef>
+#include <cstdint>
+
 
 class FlowShopResult {
 public:
