@@ -10,9 +10,12 @@
 
 #include "Problem/Problem.h"
 #include "Optimizer/DifferentialEvolution/DifferentialEvolution.h"
+#include "Problem/ProblemResult.h"
+
 #include <array>
 #include <memory>
 #include <stdexcept>
+
 
 /**
  * @class ProblemFactory
@@ -27,13 +30,14 @@ public:
      * @throws std::invalid_argument if the ID does not match a known problem.
      */
     static std::shared_ptr<Problem> create(int id);
-    
 
-    static std::vector<double> optimizeDE(
+
+    static inline ProblemResult optimizeDE(
         int id,
         double f,
         double cr,
         size_t maxGenerations,
+        size_t popSize,
         unsigned long seed,
         std::string& mutationStrategy,
         std::string& crossoverStrategy
@@ -41,8 +45,12 @@ public:
         // Create problem
         std::shared_ptr<Problem> problem = create(id);
         problem->setSeed(seed);
+
+        // Object to store result
+        ProblemResult result;
         
-        return DifferentialEvolution::optimizeO(
+        // Optimize problem
+        result.solution = DifferentialEvolution::optimize(
             *problem,
             popSize,
             f,
@@ -52,6 +60,11 @@ public:
             mutationStrategy,
             crossoverStrategy
         );
+
+        // Calculate final fitness
+        result.fitness = problem->evaluate(result.solution);
+
+        return result;
     }
 };
 

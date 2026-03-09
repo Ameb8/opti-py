@@ -4,6 +4,8 @@ from ._opti_py import (
     ExperimentConfig,
     FlowShop,
     FlowShopResult,
+    optimize_de,
+    ProblemResult
 )
 
 # Expose problem ID mapping Enum
