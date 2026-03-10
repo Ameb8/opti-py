@@ -97,6 +97,10 @@ OptResult DifferentialEvolution::optimize(
         // Copy generation's initial population
         newPopulation = population;
 
+        // Lock Gen best IDX
+        const size_t genBestIdx = globalBestIdx;
+        const std::vector<double> genBestSolution = population[genBestIdx];
+
         #pragma omp parallel
         {
             // Track thread best solution
@@ -107,22 +111,28 @@ OptResult DifferentialEvolution::optimize(
             #pragma omp for
             for(size_t j = 0; j < popSize; j++) {
                 // Create RNG seeded for each iteration
-                MersenneTwister mt;
-                mt.init_genrand(seed + i + j); // Ensure determinism
+                MersenneTwister mtMutate, mtCrossover;
+
+                // Ensure deterministic generation without overlap
+                mtMutate.init_genrand(seed + i + j); 
+                mtCrossover.init_genrand(
+                    seed + i + j + 
+                    maxGenerations * popSize // Seed offset
+                );
                 
                 // Generate mutant vector
                 std::vector<double> mutant = mutation->mutate(
                     population,
                     j,
                     f,
-                    population[globalBestIdx],
-                    mt,
+                    genBestSolution,
+                    mtMutate,
                     lower,
                     upper
                 );
 
                 // Generate Trial vector
-                crossover->crossover(newPopulation[j], mutant, cr, mt);
+                crossover->crossover(newPopulation[j], mutant, cr, mtCrossover);
 
                 // Get trial fitnesses
                 newSolutionFitnesses[j] = problem.evaluateSolution(newPopulation[j]);
@@ -148,6 +158,7 @@ OptResult DifferentialEvolution::optimize(
                 }
             }
         }
+        
         // Update iteration-best fitness
         result.bestFitnesses[i] = globalBestFitness;
 
