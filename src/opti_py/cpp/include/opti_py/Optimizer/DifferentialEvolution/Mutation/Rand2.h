@@ -29,8 +29,9 @@ public:
         std::vector<double> mutated(r5.size());
 
         for(int j = 0; j < mutated.size(); j++) {
-            mutated[j] = r5[j]
-                        + F * (r1[j] + r2[j] - r3[j] - r4[j]);
+            mutated[j] = r5[j] 
+                + F * (r1[j] - r2[j]) 
+                + F * (r3[j] - r4[j]);
 
             mutated[j] = std::clamp(mutated[j], lowerBound, upperBound);
         }

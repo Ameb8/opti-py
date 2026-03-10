@@ -23,7 +23,6 @@ public:
         const std::vector<double>& r1 = population[subset[0]];
         const std::vector<double>& r2 = population[subset[1]];
         const std::vector<double>& r3 = population[subset[2]];
-        const std::vector<double>& r4 = population[subset[3]];
 
         std::vector<double> mutated(bestVector.size());
 
