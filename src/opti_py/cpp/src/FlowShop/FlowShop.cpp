@@ -45,7 +45,8 @@ FlowShopResult FlowShop::runDE(
     return buildResult(
         jobOrder,
         blocking,
-        optimizeTardiness
+        optimizeTardiness,
+        result.bestFitnesses
     );
 }
 
@@ -78,7 +79,8 @@ FlowShopResult FlowShop::runNEH(bool blocking, bool optimizeTardiness) {
         jobOrder,
         completionTimes[num_jobs_ - 1][num_machines_ - 1],
         completionTimes,
-        calculateTardiness(completionTimes, jobOrder)
+        calculateTardiness(completionTimes, jobOrder),
+        result.fitnesses,
     };
     
     return result;
@@ -88,7 +90,8 @@ FlowShopResult FlowShop::runNEH(bool blocking, bool optimizeTardiness) {
 FlowShopResult FlowShop::buildResult(
     std::vector<size_t> jobOrder,
     bool blocking,
-    bool optimizeTardiness
+    bool optimizeTardiness,
+    std::vector<double> ranks
 ) {
     FlowShopResult result;
     result.sequence = jobOrder;
@@ -106,6 +109,7 @@ FlowShopResult FlowShop::buildResult(
     result.completionTimes = completionTimes;
     result.makespan = completionTimes[num_jobs_ - 1][num_machines_ - 1];
     result.tardiness = calculateTardiness(completionTimes, jobOrder);
+    result.fitnesses = ranks;
 
     return result;
 }

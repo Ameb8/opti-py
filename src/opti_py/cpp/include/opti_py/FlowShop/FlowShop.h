@@ -136,7 +136,8 @@ private:
     FlowShopResult buildResult(
         std::vector<size_t> jobOrder,
         bool blocking,
-        bool optimizeTardiness
+        bool optimizeTardiness,
+        std::vector<double> ranksß
     );
 
     // NEH helper methods

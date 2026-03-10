@@ -214,12 +214,14 @@ PYBIND11_MODULE(_opti_py, m) {
         .def_readwrite("makespan", &FlowShopResult::makespan)
         .def_readwrite("completionTimes", &FlowShopResult::completionTimes)
         .def_readwrite("tardiness", &FlowShopResult::tardiness)
+        .def_readwrite("fitnesses", &FlowShopResult::fitnesses)
         .def("to_dict", [](const FlowShopResult &r) {
             py::dict d;
             d["sequence"] = r.sequence;
             d["makespan"] = r.makespan;
             d["completionTimes"] = r.completionTimes;
             d["tardiness"] = r.tardiness;
+            d["fitnesses"] = r.fitnesses;
             return d;
         });
 
