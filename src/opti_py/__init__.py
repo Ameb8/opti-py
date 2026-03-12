@@ -10,3 +10,6 @@ from ._opti_py import (
 
 # Expose problem ID mapping Enum
 from .problem import Problem
+
+# Expose DE strategies mapping Enum
+from .de_strats import Mutation, Crossover
