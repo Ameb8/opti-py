@@ -1,54 +1,118 @@
 import pandas as pd
 
-from pathlib import Path
+import argparse
 import sys
+from pathlib import Path
+from typing import Any
 
 from .run_benchmarks import run_benchmarks
 from .result_builder import build_results
 from .analyze_data import average_seeds, aggregate_alg
+from .load_config import load_param_grid, ParamGridError
+
+
+def parse_args() -> argparse.Namespace:
+    """
+    Parse command-line arguments for data directory, output directory, and config file.
+    
+    Returns:
+        argparse.Namespace: Contains config_file, data_dir, and output_dir as Path objects.
+    
+    Usage:
+        python script.py config.yaml --data ./data --output ./results
+        python script.py config.yaml -d ./data -o ./results
+    """
+    parser = argparse.ArgumentParser(
+        description="Process data using configuration."
+    )
+    
+    # Config file ppth
+    parser.add_argument(
+        "-c", "--config",
+        dest="config_file",
+        type=Path,
+        default=Path.cwd() / "config.toml",
+        help="Path to configuration file (default: ./config.toml)"
+    )
+    
+    # Data directory path
+    parser.add_argument(
+        "-d", "--data",
+        dest="data_dir",
+        type=Path,
+        default=Path.cwd() / "data",
+        help="Path to data directory (default: ./data)"
+    )
+    
+    # Results directory path
+    parser.add_argument(
+        "-o", "--output",
+        dest="output_dir",
+        type=Path,
+        default=Path.cwd() / "results",
+        help="Path to output directory (default: ./results)"
+    )
+
+    # Verbose output
+    parser.add_argument(
+        "-v", "--verbose",
+        action="store_true",
+        help="Enable verbose output"
+    )
+    
+    args = parser.parse_args()
+    
+    return args
 
 
 def main() -> None:
-    data_dir: Path = Path.cwd()
-    output_dir: Path = Path.cwd() / 'results'
+    try:
+        # Parse command-line arguments
+        args = parse_args()
 
-    # Read path to data dir
-    if len(sys.argv) > 1:
-        data_dir = data_dir / sys.argv[1]
+        # Load project config
+        proj_config: dict[str, Any] = load_param_grid(args.config_file)
 
-    # Ensure data directory exists
-    if not data_dir.exists() or not data_dir.is_dir():
-        sys.exit(
-            f'Invalid Argument: Path must point to directory'
-            f'containing test data:\t{str(data_dir)}'
-        )
+        # Ensure data directory exists
+        if not args.data_dir.exists() or not args.data_dir.is_dir():
+            sys.exit(
+                f'Invalid Argument: Path must point to directory'
+                f'containing test data:\t{str(args.data_dir)}'
+            )
 
-    print(f'\nLoading flow shop problems from {data_dir}\n')
+        print(f'\nLoading flow shop problems from {args.data_dir}\n')
 
-    # Execute all experiments
-    results: pd.DataFrame = run_benchmarks(data_dir)
-    print(f'\n{len(results)} experiments executed\n\n\n')
+        # Execute all experiments
+        results: pd.DataFrame = run_benchmarks(args.data_dir, args.verbose)
+        print(f'\n{len(results)} experiments executed\n\n\n')
 
-    print('\n\n\nRaw Results:\n\n')
-    debug_df(results)
+        #print('\n\n\nRaw Results:\n\n')
+        #debug_df(results)
 
-    # Compute result statistis
-    averaged = average_seeds(results, config_cols=[
-        'blocking', 'max_gens', 'pop_size', 'f', 'cr', 
-        'seed', 'mutation', 'crossover', 'exp_name', 'optimize_tardiness'
-    ])
+        # Compute result statisticcs
+        averaged = average_seeds(results, config_cols=[
+            'blocking', 'max_gens', 'pop_size', 'f', 'cr', 
+            'seed', 'mutation', 'crossover', 'exp_name', 'optimize_tardiness'
+        ])
 
-    print('\n\n\nAveraged Results:\n\n')
-    debug_df(averaged)
+        #print('\n\n\nAveraged Results:\n\n')
+        #debug_df(averaged)
 
-    compare_alg: pd.DataFrame = aggregate_alg(averaged)
-    print('\n\n\nAlgorithm Comparison:\n\n')
-    debug_df(compare_alg)
+        compare_alg: pd.DataFrame = aggregate_alg(averaged)
+        #print('\n\n\nAlgorithm Comparison:\n\n')
+        #debug_df(compare_alg)
 
 
-    # Build results
-    build_results(compare_alg, output_dir)
-    print(f'\nExperiment results stored in {output_dir}\n')
+        # Build results
+        build_results(compare_alg, args.output_dir, args.verbose)
+        print(f'\nExperiment results stored in {args.output_dir}\n')
+    except FileNotFoundError as e:
+        sys.exit(f"Config file not found: {e}")
+    except ParamGridError as e:
+        sys.exit(f"Invalid configuration: {e}")
+    except Exception as e:
+        sys.exit("Unexpected error occurred")
+
 
 
 def debug_df(df: pd.DataFrame, name: str = "DataFrame", max_rows: int = 10):
