@@ -1,0 +1,8 @@
+\_form#0=203x14:\[   v_i(t) = x_{best}(t) + F \cdot (x_{r1}(t) - x_{r2}(t))
+\]
+\_form#1=195x14:\[   v_i(t) = x_{r0}(t) + F \cdot (x_{r1}(t) - x_{r2}(t))
+\]
+\_form#2=318x14:\[   v_i(t) = x_{r0}(t) + F \cdot (x_{r1}(t) - x_{r2}(t)) + F \cdot (x_{r3}(t) - x_{r4}(t))
+\]
+\_form#3=310x14:\[   v_i(t) = x_i(t) + \lambda \cdot (x_{best}(t) - x_i(t)) + F \cdot (x_{r1}(t) - x_{r2}(t))
+\]
