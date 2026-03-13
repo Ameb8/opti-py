@@ -1,3 +1,15 @@
+/**
+ * @file DifferentialEvolution.tpp
+ * @author Alex Buckley
+ * @brief Template implementation of Differential Evolution optimizer.
+ * @ingroup DifferentialEvolution
+ *
+ * This file contains the out-of-line template implementation of the optimize()
+ * method. It is included by DifferentialEvolution.h and should not be included directly.
+ * 
+ * @note All public API documentation is in DifferentialEvolution.h.
+ */
+
 #pragma once
 
 #include <limits>
