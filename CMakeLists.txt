@@ -20,10 +20,15 @@ if(APPLE)
         OUTPUT_VARIABLE OpenMP_ROOT
         OUTPUT_STRIP_TRAILING_WHITESPACE
     )
+    if(OpenMP_ROOT)
+        set(OpenMP_CXX_FLAGS "-fopenmp=libomp")
+        set(OpenMP_CXX_LIB_NAMES libomp)
+        set(OpenMP_libomp_LIBRARY ${OpenMP_ROOT}/lib/libomp.dylib)
+    endif()
 endif()
 
-# Optionally find OpenMP
-find_package(OpenMP)
+# Require OpenMP
+find_package(OpenMP REQUIRED)
 
 
 # Include header files
@@ -40,7 +45,7 @@ list(APPEND CPP_SOURCES src/opti_py/cpp/bindings.cpp)
 # Build the Python module
 pybind11_add_module(_opti_py ${CPP_SOURCES})
 
-# If OpenMP exists, enable it
+# Link OpenMP
 if(OpenMP_CXX_FOUND)
     target_link_libraries(_opti_py PRIVATE OpenMP::OpenMP_CXX)
     target_compile_definitions(_opti_py PRIVATE OPTI_PY_OPENMP)
