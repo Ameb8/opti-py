@@ -1,35 +1,48 @@
 from opti_py import FlowShop, FlowShopResult, Mutation, Crossover
+from tqdm import tqdm
 import numpy as np
 import pandas as pd
 
+
 from pathlib import Path
+from typing import Any, Iterator
 import itertools
 import time
-from typing import Any, Iterator
 
 from .experiment import Experiment
 
 
-param_grid = {
-    'blocking': [False, True],
-    'optimize_tardiness': [False, True],
-    'max_gens': [200],
-    'pop_size': [200],
-    'f': [0.5],
-    'cr': [0.9],
-    'seed': [1, 2, 3],
-    'mutation': list(Mutation),
-    'crossover': list(Crossover)
-}
+def count_configs(grid: dict[str, list[Any]]) -> int:
+    total = 1
+    for v in grid.values():
+        total *= len(v)
+    return total
 
 def iter_configs(grid: dict[str, list[Any]]) -> Iterator[Experiment]:
     for values in itertools.product(*grid.values()):
         yield Experiment(*values)
 
-def run_benchmarks(data_dir: Path, verbose: bool = False) -> pd.DataFrame:
+def run_benchmarks(param_grid: dict[str, list[Any]], data_dir: Path, verbose: bool = False) -> pd.DataFrame:
     benchmark_results: list[dict[str, Any]] = []# Stores experiment results
 
-    for data_file in data_dir.glob('*.txt'):
+    # Collect all data files
+    data_files = list(data_dir.glob('*.txt'))
+
+    # Count number of runs
+    configs_per_file: int = count_configs(param_grid)
+    total_experiments: int = configs_per_file * len(data_files)
+
+    # Create one global progress bar
+    pbar = None # No progress bar in verbose mode
+    if not verbose:
+        pbar = tqdm(total=total_experiments, desc="Benchmarks")
+
+
+    for data_file in data_files:
+        # Display current data file name in progress bar
+        if pbar is not None:
+            pbar.set_postfix(file=data_file.stem)
+
         # Load job execution times per machine from input file
         job_times: np.ndarray = np.loadtxt(
             data_file,
@@ -48,6 +61,14 @@ def run_benchmarks(data_dir: Path, verbose: bool = False) -> pd.DataFrame:
                 data_file.stem,
                 verbose
             ))
+
+            # Update progress bar
+            if pbar is not None:
+                pbar.update(1)
+
+    # Close progress bar
+    if pbar is not None:
+        pbar.close()
 
     # Return results as dataframe
     return pd.DataFrame(benchmark_results)
@@ -84,7 +105,7 @@ def run_experiment(problem: FlowShop, config: Experiment, exp_name: str, verbose
     result_dict['exp_name'] = exp_name
 
     if verbose: # Print experiment if in verbose mode
-        print(f'Experiment {exp_name}\tDE/{config.mutation.value}/{config.crossover.value}: {result.makespan}')
+        print(f'Experiment {exp_name}\tDE/{config.mutation.value}/{config.crossover.value}:\t\t{result.makespan}')
 
     return result_dict
         
