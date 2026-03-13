@@ -26,7 +26,7 @@ def iter_configs(grid: dict[str, list[Any]]) -> Iterator[Experiment]:
     for values in itertools.product(*grid.values()):
         yield Experiment(*values)
 
-def run_benchmarks(data_dir: Path) -> pd.DataFrame:
+def run_benchmarks(data_dir: Path, verbose: bool = False) -> pd.DataFrame:
     benchmark_results: list[dict[str, Any]] = []# Stores experiment results
 
     for data_file in data_dir.glob('*.txt'):
@@ -45,7 +45,8 @@ def run_benchmarks(data_dir: Path) -> pd.DataFrame:
             benchmark_results.append(run_experiment(
                 problem, 
                 config, 
-                data_file.stem
+                data_file.stem,
+                verbose
             ))
 
     # Return results as dataframe
@@ -53,7 +54,7 @@ def run_benchmarks(data_dir: Path) -> pd.DataFrame:
 
 
 
-def run_experiment(problem: FlowShop, config: Experiment, exp_name: str) -> dict[str, Any]:
+def run_experiment(problem: FlowShop, config: Experiment, exp_name: str, verbose: bool = False) -> dict[str, Any]:
     # Start timing
     start_time: float = time.perf_counter()
     
@@ -82,9 +83,8 @@ def run_experiment(problem: FlowShop, config: Experiment, exp_name: str) -> dict
     result_dict['exec_time'] = end_time - start_time
     result_dict['exp_name'] = exp_name
 
-    # Print experiment
-    print(f'Experiment {exp_name}\tDE/{config.mutation.value}/{config.crossover.value}: {result.makespan}')
-
+    if verbose: # Print experiment if in verbose mode
+        print(f'Experiment {exp_name}\tDE/{config.mutation.value}/{config.crossover.value}: {result.makespan}')
 
     return result_dict
         

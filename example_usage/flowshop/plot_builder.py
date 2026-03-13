@@ -11,7 +11,8 @@ def compare_algorithms(
     blocking: bool,
     optimize_tardiness: bool,
     metric: str = 'auto',
-    figsize: tuple = (12, 6)
+    figsize: tuple = (12, 6),
+    verbose: bool = False
 ) -> None:
     # Filter data for this combo
     df_filtered = df[
@@ -98,25 +99,28 @@ def compare_algorithms(
     plt.savefig(plot_dir / filename, dpi=300, bbox_inches="tight")
     plt.close()
     
-    print(f"  Saved: {filename}")
+    if verbose:
+        print(f"  Saved: {filename}")
 
 
-def build_plots(data: pd.DataFrame, plot_dir: Path) -> None:
+def build_plots(data: pd.DataFrame, plot_dir: Path, verbose: bool = False) -> None:
     plot_dir.mkdir(parents=True, exist_ok=True)
     
-    print("Building algorithm comparison plots...")
+    if verbose:
+        print("Building algorithm comparison plots...")
     
     # Generate plots for all 4 combinations (FF, FT, TF, TT)
     for blocking, optimize_tardiness in product([False, True], repeat=2):
         config_str = f"blocking={blocking}, optimize_tardiness={optimize_tardiness}"
         
         # Plot 1: auto-selected metric (tardiness if optimize_tardiness, else makespan)
-        print(f"  {config_str} → makespan/tardiness")
+        if verbose:
+            print(f"  {config_str} → makespan/tardiness")
+        
         compare_algorithms(data, plot_dir, blocking, optimize_tardiness, metric='auto')
         
         # Plot 2: execution time
-        print(f"  {config_str} → exec_time")
+        if verbose:
+            print(f"  {config_str} → exec_time")
         compare_algorithms(data, plot_dir, blocking, optimize_tardiness, metric='exec_time')
-    
-    print(f"✓ All plots saved to {plot_dir}")
 
