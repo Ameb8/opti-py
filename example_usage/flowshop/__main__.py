@@ -5,10 +5,10 @@ import sys
 from pathlib import Path
 from typing import Any
 
-from .run_benchmarks import run_benchmarks
-from .result_builder import build_results
-from .analyze_data import average_seeds, aggregate_alg
 from .load_config import load_param_grid, ParamGridError
+from .run_benchmarks import run_benchmarks
+from .analyze_data import average_seeds, aggregate_alg
+from .result_builder import build_results
 
 
 def parse_args() -> argparse.Namespace:
@@ -60,6 +60,13 @@ def parse_args() -> argparse.Namespace:
         help="Enable verbose output"
     )
     
+    # Debug argument
+    parser.add_argument(
+        "-dbg", "--debug",
+        action="store_true",
+        help="Enable debug output"
+    )
+
     args = parser.parse_args()
     
     return args
@@ -71,7 +78,7 @@ def main() -> None:
         args = parse_args()
 
         # Load project config
-        proj_config: dict[str, Any] = load_param_grid(args.config_file)
+        exp_config: dict[str, Any] = load_param_grid(args.config_file)
 
         # Ensure data directory exists
         if not args.data_dir.exists() or not args.data_dir.is_dir():
@@ -83,24 +90,33 @@ def main() -> None:
         print(f'\nLoading flow shop problems from {args.data_dir}\n')
 
         # Execute all experiments
-        results: pd.DataFrame = run_benchmarks(args.data_dir, args.verbose)
+        results: pd.DataFrame = run_benchmarks(
+            exp_config, 
+            args.data_dir, 
+            args.verbose
+        )
+
         print(f'\n{len(results)} experiments executed\n\n\n')
 
-        #print('\n\n\nRaw Results:\n\n')
-        #debug_df(results)
+        if args.debug:
+            print('\n\n\nRaw Results:\n\n')
+            debug_df(results)
 
-        # Compute result statisticcs
+        # Compute result statistics
         averaged = average_seeds(results, config_cols=[
             'blocking', 'max_gens', 'pop_size', 'f', 'cr', 
             'seed', 'mutation', 'crossover', 'exp_name', 'optimize_tardiness'
         ])
 
-        #print('\n\n\nAveraged Results:\n\n')
-        #debug_df(averaged)
+        if args.debug:
+            print('\n\n\nAveraged Results:\n\n')
+            debug_df(averaged)
 
         compare_alg: pd.DataFrame = aggregate_alg(averaged)
-        #print('\n\n\nAlgorithm Comparison:\n\n')
-        #debug_df(compare_alg)
+    
+        if args.debug:
+            print('\n\n\nAlgorithm Comparison:\n\n')
+            debug_df(compare_alg)
 
 
         # Build results
@@ -111,7 +127,7 @@ def main() -> None:
     except ParamGridError as e:
         sys.exit(f"Invalid configuration: {e}")
     except Exception as e:
-        sys.exit("Unexpected error occurred")
+        sys.exit(f"Unexpected error occurred: {e}")
 
 
 
