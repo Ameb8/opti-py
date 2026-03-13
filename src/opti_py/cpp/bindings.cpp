@@ -1,3 +1,27 @@
+/**
+ * @file bindings.cpp
+ * @author Alex Buckley
+ * @brief Python bindings for opti-py optimization library.
+ * @ingroup PythonBindings
+ *
+ * Exposes C++ optimization classes and functions to Python via pybind11.
+ * Includes FlowShop, optimization algorithms (DE, PSO), and benchmark problems.
+ *
+ * **GIL Management:**
+ * All computationally intensive operations (runNEH, runDE, optimize) release
+ * the Python GIL to enable OpenMP parallelization. This prevents threading
+ * bottlenecks during optimization.
+ *
+ * **NumPy Integration:**
+ * - Zero-copy views for job matrices and due dates
+ * - Automatic memory layout conversion (C-style to/from numpy)
+ * - Strides configured for row-major access patterns
+ *
+ * @see FlowShop (C++ class documentation for method details)
+ * @see DifferentialEvolution (C++ optimizer documentation)
+ */
+
+
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 #include <pybind11/numpy.h>
@@ -9,6 +33,7 @@
 #include "ProblemFactory.h"
 #include "Problem/ProblemResult.h"
 #include "ExperimentConfig.h"
+
 
 namespace py = pybind11;
 
@@ -150,7 +175,7 @@ PYBIND11_MODULE(_opti_py, m) {
             [](FlowShop &fs, bool blocking, bool tardiness) {
                 // Lambda to invoke cpp method
                 FlowShopResult result;
-                { // Relese GIL to enable OpenMP parallelization
+                { // Release GIL to enable OpenMP parallelization
                     py::gil_scoped_release release;
                     result = fs.runNEH(blocking, tardiness);
                 } // Reacquire GIL
@@ -162,7 +187,6 @@ PYBIND11_MODULE(_opti_py, m) {
             py::arg("tardiness") = false,
             "Run the NEH heuristic and return a FlowShopResult"
         )
-
 
         .def("run_de",
             [](
