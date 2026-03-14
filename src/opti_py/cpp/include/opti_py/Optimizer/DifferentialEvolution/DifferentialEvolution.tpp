@@ -14,6 +14,8 @@
 
 #include <limits>
 #include <omp.h>
+#include <memory>
+#include <string>
 
 #include "Optimizer/OptResult.h"
 

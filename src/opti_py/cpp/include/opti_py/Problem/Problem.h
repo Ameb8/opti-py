@@ -11,6 +11,9 @@
 
 #include <vector>
 #include <omp.h>
+#include <string>
+#include <string_view>
+#include <cmath>
 
 #include "External/mt.h"
 

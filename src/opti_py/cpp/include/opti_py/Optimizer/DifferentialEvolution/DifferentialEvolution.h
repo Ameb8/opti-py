@@ -16,6 +16,8 @@
 
 #include <vector>
 #include <cstddef>
+#include <memory>
+#include <string>
 
 #include "External/mt.h"
 #include "Optimizer/Evaluable.h"
