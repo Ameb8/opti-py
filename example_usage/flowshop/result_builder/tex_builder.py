@@ -1,33 +1,3 @@
-#!/usr/bin/env python3
-"""
-Generate professional LaTeX tables for algorithm comparison.
-Creates separate, includable table files for each configuration.
-Automatically generates main.tex with proper packages for cleveref, float, etc.
-
-Usage:
-    from generate_latex_tables_updated import generate_all_tables
-    import pandas as pd
-    
-    df = pd.read_pickle('tmp_results')
-    generate_all_tables(df, output_dir='tables')
-    
-    # This creates:
-    # - tables/summary.tex
-    # - tables/makespan_noblocking.tex
-    # - tables/makespan_blocking.tex
-    # - tables/tardiness_noblocking.tex
-    # - tables/tardiness_blocking.tex
-    # - main.tex (auto-generated)
-    
-Then compile with:
-    pdflatex main.tex
-    
-Reference tables with \cref:
-    \cref{tab:summary_best}
-    \cref{tab:makespan_noblocking}
-    etc.
-"""
-
 import pandas as pd
 import numpy as np
 from pathlib import Path
@@ -94,28 +64,26 @@ def generate_comparison_table(
     caption = f"Algorithm Comparison: {obj} Optimization {block}"
     label = f"tab:{obj.lower()}_{('blocking' if blocking else 'noblocking').lower()}"
     
-    # Build LaTeX table (standalone, includable)
-    latex = f"""\\begin{{table}}[H]
-\\centering
-\\caption{{{caption}}}
-\\label{{{label}}}
-\\small
-\\begin{{tblr}}{{
-    colspec = {{r l r r r r}},
-    row{{1}} = {{bg=headercolor, font=\\bfseries}},
-    hlines,
-    vlines,
-}}
-Rank & Algorithm & Makespan & ±Std & Tardiness & Time (s) \\\\
-"""
+    # Build LaTeX table (standalone, includable) - using raw string to avoid escaping issues
+    latex = r"\begin{table}[H]" + "\n"
+    latex += r"\centering" + "\n"
+    latex += f"\\caption{{{caption}}}\n"
+    latex += f"\\label{{{label}}}\n"
+    latex += r"\small" + "\n"
+    latex += r"\begin{tblr}{" + "\n"
+    latex += r"    colspec = {r l r r r r}," + "\n"
+    latex += r"    row{1} = {bg=headercolor, font=\bfseries}," + "\n"
+    latex += r"    hlines," + "\n"
+    latex += r"    vlines," + "\n"
+    latex += r"}" + "\n"
+    latex += r"Rank & Algorithm & Makespan & ±Std & Tardiness & Time (s) \\" + "\n"
     
     # Add data rows
     for idx, row in table_data.iterrows():
         latex += f"{row['rank']} & {row['Algorithm']} & {row['Makespan']} & {row['MK±Std']} & {row['Tardiness']} & {row['Time (s)']} \\\\\n"
     
-    latex += """\\end{tblr}
-\\end{table}
-"""
+    latex += r"\end{tblr}" + "\n"
+    latex += r"\end{table}" + "\n"
     
     return latex
 
@@ -159,31 +127,29 @@ def generate_summary_table(df: pd.DataFrame) -> str:
     
     summary_df = pd.DataFrame(rows)
     
-    latex = r"""\begin{table}[H]
-\centering
-\caption{Best Algorithm per Configuration}
-\label{tab:summary_best}
-\small
-\begin{tblr}{
-    colspec = {l l r},
-    row{1} = {bg=headercolor, font=\bfseries},
-    hlines,
-    vlines,
-}
-Configuration & Best Algorithm & Objective Value \\
-"""
+    latex = r"\begin{table}[H]" + "\n"
+    latex += r"\centering" + "\n"
+    latex += r"\caption{Best Algorithm per Configuration}" + "\n"
+    latex += r"\label{tab:summary_best}" + "\n"
+    latex += r"\small" + "\n"
+    latex += r"\begin{tblr}{" + "\n"
+    latex += r"    colspec = {l l r}," + "\n"
+    latex += r"    row{1} = {bg=headercolor, font=\bfseries}," + "\n"
+    latex += r"    hlines," + "\n"
+    latex += r"    vlines," + "\n"
+    latex += r"}" + "\n"
+    latex += r"Configuration & Best Algorithm & Objective Value \\" + "\n"
     
     for _, row in summary_df.iterrows():
         latex += f"{row['Configuration']} & {row['Best Algorithm']} & {row['Objective Value']} \\\\\n"
     
-    latex += """\end{tblr}
-\end{table}
-"""
+    latex += r"\end{tblr}" + "\n"
+    latex += r"\end{table}" + "\n"
     
     return latex
 
 
-def generate_main_tex(output_dir: str = 'tables', main_tex_path: Optional[str] = None, verbose: bool = True) -> None:
+def generate_main_tex(output_dir: str = 'tables', main_tex_path: Optional[str] = None, verbose: bool = False) -> None:
     """
     Generate a main.tex file that includes all generated tables.
     
@@ -266,7 +232,7 @@ def generate_tex(
     df: pd.DataFrame,
     output_dir: str = 'tables',
     generate_main: bool = True,
-    verbose: bool = True
+    verbose: bool = False
 ) -> None:
     """
     Generate all LaTeX tables as individual includable files.
@@ -275,7 +241,7 @@ def generate_tex(
         df: DataFrame with algorithm comparison results
         output_dir: Directory to save .tex files (created if doesn't exist)
         generate_main: If True, also generate main.tex file (default: True)
-        verbose: If True, print status messages (default: True)
+        verbose: If True, print status messages (default: False)
     """
     
     # Create output directory
@@ -291,7 +257,7 @@ def generate_tex(
     with open(summary_file, 'w') as f:
         f.write(summary_tex)
     if verbose:
-        print(f"{summary_file} created")
+        print(f"Created {summary_file}")
     
     # 2-5. Configuration-specific tables
     configs = [
@@ -307,11 +273,10 @@ def generate_tex(
         with open(table_file, 'w') as f:
             f.write(table_tex)
         if verbose:
-            print(f"{table_file} created")
+            print(f"Created {table_file}")
     
     # Generate main.tex if requested
     if generate_main:
         generate_main_tex(output_dir)
     
-
 
