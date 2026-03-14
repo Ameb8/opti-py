@@ -1,0 +1,11 @@
+[param_grid]
+blocking = [true, false]
+tardiness = [true, false]
+max_gens = [500]
+pop_size = [200]
+f = [0.8]
+cr = [0.5]
+seed = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30]
+mutation = ["rand1", "best1", "rand2", "best2", "randToBest1"]
+crossover = ["bin", "exp"] 
+
