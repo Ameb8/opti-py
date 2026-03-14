@@ -2,6 +2,7 @@ import pandas as pd
 
 import argparse
 import sys
+import pickle
 from pathlib import Path
 from typing import Any
 
@@ -12,21 +13,12 @@ from .result_builder import build_results
 
 
 def parse_args() -> argparse.Namespace:
-    """
-    Parse command-line arguments for data directory, output directory, and config file.
-    
-    Returns:
-        argparse.Namespace: Contains config_file, data_dir, and output_dir as Path objects.
-    
-    Usage:
-        python script.py config.yaml --data ./data --output ./results
-        python script.py config.yaml -d ./data -o ./results
-    """
+    # Create ArgumentParser object
     parser = argparse.ArgumentParser(
         description="Process data using configuration."
     )
     
-    # Config file ppth
+    # Config file path
     parser.add_argument(
         "-c", "--config",
         dest="config_file",
@@ -53,7 +45,23 @@ def parse_args() -> argparse.Namespace:
         help="Path to output directory (default: ./results)"
     )
 
-    # Verbose output
+    # Run and save experiments only
+    parser.add_argument(
+        "-e", "--experiment-only",
+        dest="exp_only",
+        action="store_true",
+        help="Run experiments and save results, skip analysis"
+    )
+
+    # Load experiment results from pickle file
+    parser.add_argument(
+        "-l", "--load-results",
+        type=Path,
+        default=None,
+        help="Load previously saved results from pickle file (path to .pkl file)"
+    )
+
+    # Enable verbose output
     parser.add_argument(
         "-v", "--verbose",
         action="store_true",
@@ -67,9 +75,28 @@ def parse_args() -> argparse.Namespace:
         help="Enable debug output"
     )
 
+    # Parse args
     args = parser.parse_args()
     
     return args
+
+def load_results(exp_data: Path) -> pd.DataFrame:
+    print(f'\nLoading results from {exp_data}\n')
+    
+    # Ensure experiment data file exists
+    if not exp_data.exists():
+        sys.exit(f"Pickle file not found: {exp_data}")
+
+    try: # Attempt to load experiment result data
+        results: pd.DataFrame = pd.read_pickle(exp_data)
+    except pickle.UnpicklingError as e:
+        sys.exit(f"Failed to unpickle file (corrupted?): {e}")
+    except pd.errors.ParserError as e:
+        sys.exit(f"Failed to parse pickle as DataFrame: {e}")
+    except Exception as e:
+        sys.exit(f"Error loading pickle file: {e}")
+
+    return results
 
 
 def main() -> None:
@@ -77,26 +104,41 @@ def main() -> None:
         # Parse command-line arguments
         args = parse_args()
 
-        # Load project config
-        exp_config: dict[str, Any] = load_param_grid(args.config_file)
+        # Load experiment results from file
+        if args.load_results:    
+            results: pd.DataFrame = load_results(args.load_results)
+        else: # Run experiments
+            # Load project config
+            exp_config: dict[str, Any] = load_param_grid(args.config_file)
 
-        # Ensure data directory exists
-        if not args.data_dir.exists() or not args.data_dir.is_dir():
-            sys.exit(
-                f'Invalid Argument: Path must point to directory'
-                f'containing test data:\t{str(args.data_dir)}'
+            # Ensure data directory exists
+            if not args.data_dir.exists() or not args.data_dir.is_dir():
+                sys.exit(
+                    f'Invalid Argument: Path must point to directory'
+                    f'containing test data:\t{str(args.data_dir)}'
+                )
+
+            print(f'\nLoading flow shop problems from {args.data_dir}\n')
+
+            # Execute all experiments
+            results: pd.DataFrame = run_benchmarks(
+                exp_config, 
+                args.data_dir, 
+                args.verbose
             )
 
-        print(f'\nLoading flow shop problems from {args.data_dir}\n')
+            # Save results
+            args.output_dir.mkdir(parents=True, exist_ok=True)
+            results.to_pickle(args.output_dir / 'results.pkl')
 
-        # Execute all experiments
-        results: pd.DataFrame = run_benchmarks(
-            exp_config, 
-            args.data_dir, 
-            args.verbose
-        )
+            # Display experiments completed
+            print(f'\n{len(results)} experiments executed')
+            print(f'Serialized results saved to {args.output_dir / "results.pkl"}\n\n')
 
-        print(f'\n{len(results)} experiments executed\n\n\n')
+            # Exit program if experiment only flag passed
+            if args.exp_only:
+                sys.exit(0)
+
 
         if args.debug:
             print('\n\n\nRaw Results:\n\n')
