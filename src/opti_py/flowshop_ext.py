@@ -1,7 +1,7 @@
 import numpy as np
 
 
-def set_due_dates(self, rho: float = 2.5, seed: int = 108664) -> None:
+def set_due_dates(self, rho: float = 0.5, seed: int = 108664) -> None:
     # Create seeded rng
     rng = np.random.default_rng(seed)
 
