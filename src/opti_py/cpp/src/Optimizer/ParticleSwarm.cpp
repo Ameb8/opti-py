@@ -3,8 +3,8 @@
 #include <limits>
 #include <stdexcept>
 
-#include "Optimizer/Mutation/AllMutations.h"
-#include "Optimizer/Crossover/AllCrossovers.h"
+//#include "Optimizer/Mutation/AllMutations.h"
+//#include "Optimizer/Crossover/AllCrossovers.h"
 
 
 std::vector<std::vector<double>> ParticleSwarm::initPopulation() {
