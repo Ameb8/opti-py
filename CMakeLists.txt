@@ -19,17 +19,12 @@ if(APPLE)
         COMMAND brew --prefix libomp
         OUTPUT_VARIABLE OpenMP_ROOT
         OUTPUT_STRIP_TRAILING_WHITESPACE
+        ERROR_QUIET
     )
-    if(OpenMP_ROOT)
-        set(OpenMP_CXX_FLAGS "-fopenmp=libomp")
-        set(OpenMP_CXX_LIB_NAMES libomp)
-        set(OpenMP_libomp_LIBRARY ${OpenMP_ROOT}/lib/libomp.dylib)
-    endif()
 endif()
 
 # Require OpenMP
 find_package(OpenMP REQUIRED)
-
 
 # Include header files
 include_directories(src/opti_py/cpp/include/opti_py)
@@ -46,18 +41,14 @@ list(APPEND CPP_SOURCES src/opti_py/cpp/bindings.cpp)
 pybind11_add_module(_opti_py ${CPP_SOURCES})
 
 # Link OpenMP
-if(OpenMP_CXX_FOUND)
-    target_link_libraries(_opti_py PRIVATE OpenMP::OpenMP_CXX)
-    target_compile_definitions(_opti_py PRIVATE OPTI_PY_OPENMP)
-endif()
-
+target_link_libraries(_opti_py PRIVATE OpenMP::OpenMP_CXX)
+target_compile_definitions(_opti_py PRIVATE OPTI_PY_OPENMP)
 
 # CPP compiler flags
 target_compile_options(_opti_py PRIVATE
     $<$<CONFIG:Debug>:-Wall -Wextra -Wpedantic>
     $<$<CONFIG:Release>:-O3>
 )
-
 
 # Install module
 install(TARGETS _opti_py
