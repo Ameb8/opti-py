@@ -18,9 +18,11 @@ def count_configs(grid: dict[str, list[Any]]) -> int:
         total *= len(v)
     return total
 
+
 def iter_configs(grid: dict[str, list[Any]]) -> Iterator[Experiment]:
     for values in itertools.product(*grid.values()):
         yield Experiment(*values)
+
 
 def run_benchmarks(param_grid: dict[str, list[Any]], data_dir: Path, verbose: bool = False) -> pd.DataFrame:
     benchmark_results: list[dict[str, Any]] = []# Stores experiment results
@@ -55,6 +57,13 @@ def run_benchmarks(param_grid: dict[str, list[Any]], data_dir: Path, verbose: bo
 
         # Run benchmark with all configurations
         for config in iter_configs(param_grid):
+            # Set due dates field
+            problem.set_due_dates(seed=config.seed)
+
+            if verbose:
+                print(f"\ndue dates:\n{problem.due_dates}\n")
+
+            # Run experiment
             benchmark_results.append(run_experiment(
                 problem, 
                 config, 
