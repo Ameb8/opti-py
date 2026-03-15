@@ -157,7 +157,7 @@ results_non_blocking: FlowShopResult = problem.run_neh()
 results_blocking: FlowShopResult = problem.run_neh(blocking=True)
 ```
 
-The same FlowShop object can be used to conduct any number of optimizations, with or without modifications to the `jobs` field matrix in between runs. Modifications to a FlowShop object will not affect FlowShopResult objects that it has already created. Additionally, NEH can be used to opimize for tardiness instead of makespan. 
+The same FlowShop object can be used to conduct any number of optimizations, with or without modifications to the `jobs` field matrix in between runs. Modifications to a FlowShop object will not affect FlowShopResult objects that it has already created. Additionally, NEH can be used to optimize for tardiness instead of makespan. This can be done by passing `tardiness=True` as `run_neh` parameter. 
 
 ##### Optimizing with Differential Evolution
 
@@ -199,16 +199,6 @@ result: FlowShopResult = flow_shop.run_de()
 
 
 In addition to data fields, the FlowShopResult class offers a `to_dict()` method. When invoked, this method constructs a python dictionary of type *dict[str, Any]*, with Keys exactly matching field names and values matching the field values. As the class has no underlying `__dict__` property like native Python classes, the `object.to_dict()` method must be used in place of `value(object)` for dictionary conversion.
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -311,54 +301,105 @@ Optimizer objects all support the same methods, allowing polymorphic use through
     Returns the most optimal solution found during the last optimization in list format. List length will match the number of dimensions used in the optimization.
 
 
-Project Structure
+# Project Implementation
+
+While OptiPy provides an easy to use Python interface, optimizations are performed by executing C++ code in order to improve computational efficiency. Additionally, the differential evolution algorithm utilizes OpenMP to further increase speed by taking advantage of CPU-based parallelism. Python bindings are implemented using the PyBind11 library, allowing users to create and use C++ classes from within Python code. When optimizations are performed, the program releases Pythons GIL (Global Interpreter Lock) in order to allow true parallelism. To further improve performance, the FlowShop class utilizes shared memory between C++ and Python for the `job_times` and `due_dates` field. This allows Python users to modify the NumPy array fields directly, without requiring any array copies to be performed. Detailed documentation of the C++ code is available as a [webpage](https://ameb8.github.io/opti-py/) and as a [pdf document](https://github.com/Ameb8/opti-py/blob/master/docs/refman.pdf).
+
+## Project Directory Structure
 
 
 ```python
 .
 ├── CMakeLists.txt # Build file for OptiPy. Controls how C++ code is compiles
+├── Doxyfile # Configuration file for producing C++ code documentation
 ├── README.md # Instructions for using OptiPy
-├── example_usage # Example usage of OptiPy
-│   └── flowshop # Example flow shop optimizations
-│       ├── __init__.py # Empty file allowing directory to be treated as python package
-│       ├── __main__.py # Main method for running example flow shop experiment
-│       └── run_benchmarks.py # Runs flow shop experiment with input test data
-|
-├── pyproject.toml # pip library configuration
-└── src # Contains all project source code
-    └── opti_py
-        ├── __init__.py # Defines which objects are exported by default for ease of use
-        ├── cpp # Contains C++ code used in library
-        │   ├── bindings.cpp # Python bindings for C++ code. Defines Python interface to library
-        │   ├── include # Contains all heder files and C++ class declarations
-        │   │   └── opti_py
-        │   │       ├── ExperimentConfig.h # Experiment Configuration for function optimizations
-        │   │       ├── External # Contains header files form external sources
-        │   │       │   └── mt.h # Header file for external Mersenne Twister pseudo-random generator
-        │   │       ├── FlowShop # Header files for flow shop related classes 
-        │   │       │   ├── FlowShop.h # Class declaration for FlowShop
-        │   │       │   └── FlowShopResult.h # Class declaration for FlowShopResult
-        │   │       ├── Optimizer # Contains Optimizer functions
-        │   │       │   ├── Blind.h # Class declaration for Blind Search optimizer
-        │   │       │   ├── Crossover # Stores Crossover types for Differential Evolution
-        │   │       │   │   ├── AllCrossovers.h # Allows for simple include of all crossover types
-        │   │       │   │   ├── BinCrossover.h # Single-header file for binomial crossover
-        │   │       │   │   ├── Crossover.h # Abstract base class for crossover methods
-        │   │       │   │   └── ExpCrossover.h # Single-header file for exponential crossover
-        │   │       │   ├── DifferentialEvolution.h # Class declaration for Differential Evolution optimizer
-        │   │       │   ├── LocalSearch.h # Class declaration for Local Search optimizer
-        │   │       │   ├── Mutation # Stores mutation types for Differential Evolution
-        │   │       │   │   ├── AllMutations.h # Allows for simple include of all mutation types
-        │   │       │   │   ├── Best1.h # Mutation implementation for best/1 
-        │   │       │   │   ├── Best2.h # Mutation implementation for best/2
-        │   │       │   │   ├── Mutation.h # Abstract base class for mutation methods
-        │   │       │   │   ├── Rand1.h # Mutation implementation for rand/1
-        │   │       │   │   ├── Rand2.h # Mutation implementation for rand/2
-        │   │       │   │   └── RandBest1.h  # Mutation implementation for rand-to-best/1
-        │   │       │   ├── Optimizer.h # Abstract base class for Optimizer types
-        │   │       │   ├── OptimizerFactory.h # Constructs Optimizer objects of various subtypes
-        │   │       │   └── ParticleSwarm.h # Class declaration for Local Search optimizer
-        │   │       ├── Problem # Contains polymorphic standard benchmark function class definitions
+├── docs # Directory to contain project documentation
+│   ├── flowshop_de_benchmark.pdf # Report for example benchmark experiment
+│   └── refman.pdf # Doxygen-generated reference manual for C++ code
+├── example_usage # Example usage of OptiPy to perform optimization experiments
+│   ├── configs # Example configuration file for experimentation
+│   │   └── flowshop_config.toml # Base config file
+│   ├── flowshop # Program for performing optimzation experiments
+│   │   ├── __main__.py # Entrypoint for experiment runs
+│   │   ├── analyze_data.py # Performs statistical analysis of experiment results
+│   │   ├── experiment.py # Dataclass for experiment configurations
+│   │   ├── load_config.py # Loads experiment configs from config file
+│   │   ├── result_builder # Produces artifacts from experiment results
+│   │   │   ├── __init__.py # Allows direct imports of certain functions from outside submodule
+│   │   │   ├── plot_builder.py # Creates plots form experiment data
+│   │   │   ├── result_builder.py # Orchestrates artifact creation
+│   │   │   └── tex_builder.py # Creates LaTeX document with table results
+│   │   └── run_benchmarks.py # Performs benchmark and writes results to dataframe
+│   └── requirements.txt # Defines dependencies
+├── flowshop_benchmark # Contains source files and data for example experiment report
+│   ├── compile.sh # Utility script for compiling LaTeX files
+│   ├── main.tex # Contains main content of example report
+│   ├── plots # Contains plots used in report
+│   │   ├── block_makespan.tex # LaTeX file to include plot in report
+│   │   ├── block_makespan_times.tex # LaTeX file to include plot in report
+│   │   ├── block_tard.tex # LaTeX file to include plot in report
+│   │   ├── block_tard_times.tex # LaTeX file to include plot in report
+│   │   ├── makespan.tex # LaTeX file to include plot in report
+│   │   ├── makespan_times.tex # LaTeX file to include plot in report
+│   │   ├── raw # Contains raw plot images
+│   │   │   ├── algorithm_comparison_blocked_no_tardiness_exec_time.png # Raw plot image
+│   │   │   ├── algorithm_comparison_blocked_no_tardiness_makespan.png # Raw plot image
+│   │   │   ├── algorithm_comparison_blocked_tardiness_exec_time.png # Raw plot image
+│   │   │   ├── algorithm_comparison_blocked_tardiness_tardiness.png # Raw plot image
+│   │   │   ├── algorithm_comparison_unblocked_no_tardiness_exec_time.png # Raw plot image
+│   │   │   ├── algorithm_comparison_unblocked_no_tardiness_makespan.png # Raw plot image
+│   │   │   ├── algorithm_comparison_unblocked_tardiness_exec_time.png # Raw plot image
+│   │   │   └── algorithm_comparison_unblocked_tardiness_tardiness.png # Raw plot image
+│   │   ├── tard.tex # LaTeX file to include plot in report
+│   │   └── tard_times.tex # LaTeX file to include plot in report
+│   ├── references.bib # References used to generate bibliography
+│   └── tables # LaTeX tables generated by example experiment program
+│       ├── crossover_strats.tex # Crosssover strategies use in experiment
+│       ├── de_hyperparams.tex # DE hyperparameters used ine experiment
+│       ├── makespan_blocking.tex # Results for makespan with blocking optimization
+│       ├── makespan_noblocking.tex # Results for non-blocking makespan optimization
+│       ├── mutation_strats.tex # Mutations strategies used in experiment
+│       ├── tardiness_blocking.tex # Results for blocking tardiness optimization
+│       └── tardiness_noblocking.tex # Results for non-blocking tardiness optimization
+├── pyproject.toml # Configuration file for building pip packages
+└── src # Contains source code for OptiPy library
+    └── opti_py # Contains source code for OptiPy library
+        ├── __init__.py # Defines classes and files directly importable from Python
+        ├── cpp # Contains C++ source code
+        │   ├── bindings.cpp # PyBind11 Python bindings for C++ source code
+        │   ├── include # Contains header files used in project
+        │   │   └── opti_py # Contains header files used in project
+        │   │       ├── ExperimentConfig.h # Stores experiment configuration
+        │   │       ├── External # Contains external C++ libraries
+        │   │       │   └── mt.h # Mersenne Twister pseudo-rng 
+        │   │       ├── FlowShop # Implementation of flow shop problem
+        │   │       │   ├── FlowShop.h # Defines FlowShop class
+        │   │       │   └── FlowShopResult.h # Stores Flow Shop optimization results
+        │   │       ├── Optimizer # Contains optimization strategies
+        │   │       │   ├── Blind.h # Blind Search class
+        │   │       │   ├── DifferentialEvolution # Stores Differential Evolution codes
+        │   │       │   │   ├── Crossover # Crossover methods
+        │   │       │   │   │   ├── AllCrossovers.h # File to easily import crossover classes
+        │   │       │   │   │   ├── BinCrossover.h # Binomial crossover implementation
+        │   │       │   │   │   ├── Crossover.h # Abstract base class for crossover types
+        │   │       │   │   │   └── ExpCrossover.h # Exponential crossover implementation
+        │   │       │   │   ├── DifferentialEvolution.h # Differential Evolution implementation
+        │   │       │   │   ├── DifferentialEvolution.tpp # Contains template function for DE optimization
+        │   │       │   │   └── Mutation # DE mutation strategies
+        │   │       │   │       ├── AllMutations.h # File to easily import mutation types
+        │   │       │   │       ├── Best1.h # Best-1 mutation implementation
+        │   │       │   │       ├── Best2.h # Best-2 mutation implementation
+        │   │       │   │       ├── Mutation.h # Abstract base class for mutation types
+        │   │       │   │       ├── Rand1.h # Rand-1 mutation implementation
+        │   │       │   │       ├── Rand2.h # Rand-2 mutation implementation
+        │   │       │   │       └── RandBest1.h# Rand-to-best-1 mutation implementation
+        │   │       │   ├── Evaluable.h # Template type for DE optimization
+        │   │       │   ├── LocalSearch.h # Local search header file
+        │   │       │   ├── OptResult.h # Stores results from optimization runs
+        │   │       │   ├── Optimizer.h # Abstract base class for optimizer types
+        │   │       │   ├── OptimizerFactory.h # Constructs optimizer classes of differing types
+        │   │       │   └── ParticleSwarm.h # Particle swarm header file
+        │   │       ├── Problem # Stores classses for standard benchmark function implementation
         │   │       │   ├── AckleyOne.h # Implements Ackley's One standard benchmark function
         │   │       │   ├── AckleyTwo.h # Implements Ackley's Two standard benchmark function
         │   │       │   ├── DeJongOne.h # Implements De Jong One standard benchmark function
@@ -370,9 +411,9 @@ Project Structure
         │   │       │   ├── Schwefel.h # Implements Schwefel standard benchmark function
         │   │       │   ├── SineEnvelope.h # Implements Sine Envelope Sine Wave standard benchmark function
         │   │       │   └── StretchedV.h # Implements Stretched V Sine Wave standard benchmark function
-        │   │       ├── ProblemFactory.h # Constructs various Problem class implementations form problem ID
-        │   │       ├── SolutionBuilder.h # Functionality for generating and modifying high-dimensional solutions
-        │   │       └── debug.h # Used for debug logging when env var set
+        │   │       ├── ProblemFactory.h # Constructs Problem objects
+        │   │       ├── SolutionBuilder.h # Builds solution data
+        │   │       └── debug.h # File used for debug logging
         │   └── src # Contains C++ implementation files used by OptiPy library
         │       ├── External # Contains external source code
         │       │   └── mt.cpp # Implementation file for external Mersenne Twister pseudo-random generator
@@ -380,22 +421,21 @@ Project Structure
         │       │   └── FlowShop.cpp # C++ implementation for FlowShop class
         │       ├── Optimizer # Contains implementation files for Optimizer classes
         │       │   ├── Blind.cpp # C++ implementation for Blind Search optimizer
-        │       │   ├── DifferentialEvolution.cpp # C++ implementation for Differential Evolution optimizer 
         │       │   ├── LocalSearch.cpp # C++ implementation for Local Search optimizer
         │       │   └── ParticleSwarm.cpp # C++ implementation for Particle Swarm optimizer
         │       ├── ProblemFactory.cpp # C++ source code for ProblemFactory class
         │       └── SolutionBuilder.cpp # C++ source code for SolutionBuilder class
+        ├── de_strats.py # Contains enums for mutation aand crossover strategies
+        ├── flowshop_ext.py # Extends flowshop class with function to generate due dates
         └── problem.py # Python enum for available standard benchmark function problem types
 
-18 directories, 52 files
-
+29 directories, 99 files
 ```
-
 
 
 # Flow Shop Example Experiment
 
-A command-line tool for running and analyzing flow shop scheduling optimization experiments with differential evolution algorithms. Supports parameter grid exploration, multi-seed averaging, algorithm comparison, and result visualization.
+A command-line tool for running and analyzing flow shop scheduling optimization experiments with differential evolution algorithms. Supports parameter grid exploration, multi-seed averaging, algorithm comparison, and result visualization. An example experiment was conducted, with results included in this repository, which [can be found here](https://github.com/Ameb8/opti-py/blob/master/docs/flowshop_de_benchmark.pdf).
 
 ## Overview
 
@@ -584,45 +624,6 @@ The program exits gracefully with informative messages:
 | Pickle file corrupted | 1 | `Failed to unpickle file (corrupted?): [error]` |
 | Unexpected exception | 1 | `Unexpected error occurred: [error]` |
 
-
-## Troubleshooting
-
-### "Pickle file not found"
-
-Verify the pickle path exists and is readable:
-```bash
-ls -lh ./results/results.pkl
-```
-
-### Plots are missing
-
-Check that `build_results()` succeeded (look for errors in console output). Ensure matplotlib and seaborn are installed:
-```bash
-pip install matplotlib seaborn
-```
-
-### Memory usage grows unbounded
-
-If processing very large result sets, consider splitting analysis:
-1. Run experiments in batches with `-e`
-2. Analyze each batch separately with `-l`
-
----
-
-## Dependencies
-
-- `pandas` — Data manipulation and aggregation
-- `argparse` — Command-line argument parsing
-- `pathlib` — Path handling
-- `matplotlib` & `seaborn` — Plotting (for `build_results()`)
-- `numpy` — Numerical operations (often via pandas/matplotlib)
-
-Install with:
-```bash
-pip install pandas matplotlib seaborn numpy
-```
-
----
 
 ## Exit Codes
 
