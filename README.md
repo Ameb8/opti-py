@@ -122,6 +122,12 @@ problem.jobs = np.array([[5, 6], [7, 8]])
 print(f"Reference to Freed Memory: {initial_jobs}")
 ```
 
+##### Due Dates
+
+The due dates field functions in the same manner ass the job times field, utilizing shared memory between Python's NumPy array and the C++ vector. Thus, it can be directly modified in the same manner as job times. However, reassigning the field before referencing the old due dates vector again causes undefined behavior, as the memory has been freed by the C++ code. Additionally, the length of the due dates array must be equal to the number of jobs in the object, otherwise an error will occur. 
+
+In addition to initializing due dates manually, the `set_due_dates` FlowShop class method can be used for initialization. Due dates are generated according t the *proportional-random method*, a common strategy used in academic research. Because due dates are generated based on existing job times, the job times field must be non-empty before this method is invoked. 
+
 ##### Properties
  
 | Property | Type | Access | Description |
@@ -212,94 +218,57 @@ import opti_py
 print(list(opti_py.Problem))
 ```
 
-### Creating an Optimizer
-
-
-Once you have selected a problem to optimize, you can create an ExperimentConfig object. ExperimentConfig objects take the parameters which are agnostic of which specific optimizer you use. This can be done as follows:
+Standard benchmark functions can be optimized via the `optimize_de` method. For example, to optimize the Schwefel function, you simply pass it as paraameter to the function.
 
 ```python
-config: opti_py.ExperimentConfig = opti_py.ExperimentConfig(
-    problem_type=opti_py.Problem.SCHWEFEL,
-    dimensions=30,
-    lower=-512,
-    upper=512,
-    max_iterations=5000,
-    seed=42
+from opti_py import Problem, OptResult, optimize_de
+
+result: OptResult = optimize_de(
+    problem_id=Problem.SCHWEFEL,
+    f=0.8,
+    cr=0.5,
+    max_generations=1000,
+    seed=108664,
+    mutation_strategy="rand1",
+    crossover_strategy="bin"
 )
 ```
 
-After creating an ExperimentConfig object, you are now able to instantiate an Optimizer object. Currently, OptiPy only has support for basic Particle Swarm Optimization and a few different methods of Differential Evolution, with support for Blind and Repeated Local Searches coming in the next release. A Particle Swarm optimizer can be created in the following manner:
+Additionally, the same optimization as above can be performed by relying on default `optimize_de` parameters:
 
 ```python
-pso: opti_y.ParticleSwarm = ParticleSwarm(
-    config,
-    c1=0.8,
-    c2=1.2,
-    pop_size=200
-)
+from opti_py import OptResult, optimize_de
+
+result: OptResult = optimize_de()
 ```
 
-Using default constructor values, an identical optimizer can be created with:
+#### OptResult
+
+The `optimize_de` function stores results from optimization runs. It contains best solution found, best overall fitness, and best fitness found each iteration.
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| **solution** | *list[float]* | The best solution vector found during optimization |
+| **fitnesses** | *list[float]* | The best fitness value found at each generation |
+| **fitness** | *float* | The best fitness value achieved across all generations |
+
+
+### Optimization Strategies
+
+While this project did support multiple optimization strategies, like blind search, local search, and particle swarm optimization, these are temporarily unavailable. This is due to widespread project updates aimed at improving performance and compatibility with a wider range of problem types. In order to speed up the refactoring process, backwards compatibility has not been kept. However, work is being done to ensure other optimizations strategies are compatible with new project structure.
+
+#### Differential Evolution
+
+The Differential Evolution class is now capable of supporting a wider range of problems, including standard benchmark functions and the flow shop problem. However, optimizer classes are no longer directly instantiatable from Python. Instead, class methods for optimizable problems are provided. These methods invoke the same DE class internally, but provide more user friendly Python interfaces for the problems being optimized. 
+
+Differential Evolution optimization runs take crossover and mutation types as optional parameters. These arguments can be passed as string, or via the Mutation nd Crossover enums exposed to Python. Available mutation and crossover types can be viewed in the following manner:
 
 ```python
-pso: opti_py.ParticleSwarm = ParticleSwarm(
-    config
-)
+from opti_py import Mutation, Crossover
+
+print(list(Mutation))
+print(list(Crossover))
 ```
-
-The constructor for Differential Evolution optimizer varies slightly, as more methods are supported. The following code creates a Differential Evolution optimizer:
-
-```python
-de: opti_py.DifferentialEvolution = DifferentialEvolution(
-    config,
-    scale=0.9,
-    crossover_rate=0.6,
-    pop_size=200,
-    mutation="rand1",
-    crossover="bin"
-)
-```
-
-Supported mutation methods are as follows:
-
-- rand1
-- rand2
-- best1
-- best2
-- randToBest1
-
-These can be passed as strings to the Differential Evolution constructor. Additionally, "bin" or "exp" can be passed as the crossover argument to allow for binomial or exponential crossover during optimization.
-
-
-Similarly to ParticleSwarm objects, default constructor values can be used to create an identical object:
-
-
-```python
-de: opti_py.DifferentialEvolution = DifferentialEvolution(
-    config
-)
-```
-
-### Using an Optimizer
-
-Optimizer objects all support the same methods, allowing polymorphic use through Python's duck-typing system. These methods are:
-
-- `def optimize(self) -> NDArray[np.float64]`
-
-    This allows users to run Optimization experiments. Taking no parameters, it returns an `ndarray` containing the best fitness value found at each optimization iteration.
-
-- `def get_best_fitness(self) -> float`
-
-    This method returns the most optimal fitness value found in the last optimization.
-
-- `def get_fitnesses(self) -> list[float]`
-
-    Returns the best fitness found at each iteration in Python list format. It will return the same values as the last optimize() call just in list format.
-
-- `def get_best_solution(self) -> list[float]`
-
-    Returns the most optimal solution found during the last optimization in list format. List length will match the number of dimensions used in the optimization.
-
 
 # Project Implementation
 
