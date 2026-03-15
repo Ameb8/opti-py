@@ -46,6 +46,15 @@
 \begin{document}
 
 \maketitle
+
+\begin{abstract}
+
+This paper evaluates the effectiveness of Differential Evolution (DE) mutation and crossover strategies for solving the permutation flow shop scheduling problem using Standard Permutation Vector (SPV) discretization. We systematically compare eight DE strategy combinations---four mutation strategies (best-1, rand-1, rand-2, rand-to-best-1) paired with two crossover methods (binomial and exponential)---across both makespan and tardiness optimization objectives, with and without the blocking constraint. All experiments use the Taillard benchmark set with the NEH heuristic for population initialization. Results demonstrate that DE/best-1/exp and DE/rand-to-best-1/exp consistently outperform other variants regardless of optimization metric or blocking status, with exponential crossover substantially outperforming binomial crossover. The relative effectiveness of mutation strategies remains largely independent of the crossover method and blocking constraint, suggesting these algorithmic properties are orthogonal to problem structure. Additionally, best-1 mutation strategies achieve superior computational efficiency. While the experiment was limited to 10 random seeds due to computational constraints, findings provide practical guidance for selecting DE strategies in discrete flow shop optimization problems.
+
+\end{abstract}
+
+\clearpage
+
 \clearpage
 
 \tableofcontents
@@ -58,6 +67,58 @@
 \clearpage
 
 \listofequations
+\clearpage
+
+\section*{Glossary}
+
+\begin{description}
+    \item[Binomial Crossover] A crossover strategy in DE where each component of the trial vector is inherited from either the mutant or target vector based on independent random decisions controlled by the crossover rate $CR$.
+    
+    \item[Blocking] A constraint in flow shop scheduling that prevents intermediate job storage between machines, forcing a job to wait on machine $i$ if machine $i+1$ is busy.
+    
+    \item[Blocking Variation] The permutation flow shop problem with the blocking constraint applied.
+    
+    \item[Crossover] A DE operator that combines the mutant vector with the target vector to produce a trial vector, governed by the crossover rate $CR$.
+    
+    \item[DE/best-1/exp] A DE variant using best-1 mutation strategy with exponential crossover.
+    
+    \item[DE/best-1/bin] A DE variant using best-1 mutation strategy with binomial crossover.
+    
+    \item[DE/rand-to-best-1] A DE mutation strategy that creates a mutant vector by combining random and best population members.
+    
+    \item[DE/rand-1] A DE mutation strategy that uses the difference between two randomly selected population members.
+    
+    \item[DE/rand-2] A DE mutation strategy that uses the differences between two pairs of randomly selected population members.
+    
+    \item[DE/best-2] A DE mutation strategy that uses the differences between two pairs of best and random population members.
+    
+    \item[Differential Evolution (DE)] A population-based metaheuristic optimization algorithm that iteratively improves candidate solutions through mutation, crossover, and selection operations.
+    
+    \item[Due Date] The target completion time for a job in tardiness optimization; tardiness is incurred if the job finishes after this time.
+    
+    \item[Exponential Crossover] A crossover strategy in DE where a contiguous segment of components is inherited from the mutant vector, controlled by the crossover rate $CR$.
+    
+    \item[Flow Shop Problem] A scheduling problem where jobs must be processed on machines in a fixed order, and the job sequence must be optimized for a given objective.
+    
+    \item[Makespan] The total elapsed time from when the first job starts on the first machine until the last job finishes on the last machine.
+    
+    \item[Mutation] A DE operator that creates a mutant vector by combining scaled differences of population members with a base solution.
+    
+    \item[Mutation Scaling Factor ($F$)] A DE control parameter that scales the magnitude of perturbations during mutation.
+    
+    \item[NEH Heuristic] The Nawaz-Enscore-Ham constructive heuristic for flow shop scheduling; builds a solution by iteratively inserting jobs at optimal positions.
+    
+    \item[Permutation Flow Shop Problem] A variant of the flow shop problem where the job sequence is the same on all machines.
+    
+    \item[Standard Permutation Vector (SPV)] A discretization method that maps continuous vectors to job sequences via argsort, enabling DE to solve discrete combinatorial problems.
+    
+    \item[Tardiness] The amount of time by which a job finishes after its due date; zero if the job finishes before its due date.
+    
+    \item[Taillard Benchmark Set] A widely-used standard dataset of flow shop instances with known or near-optimal solutions, ranging from small ($20 \times 5$) to large ($100 \times 20$) problems.
+    
+    \item[Trial Vector] The candidate solution produced by crossover of the mutant and target vectors; replaces the target if it achieves a lower objective value.
+\end{description}
+
 \clearpage
 
 
