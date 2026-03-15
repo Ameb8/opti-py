@@ -1,0 +1,18 @@
+\begin{table}[H]
+\centering
+\caption{Best Algorithm per Configuration}
+\label{tab:summary_best}
+\small
+\begin{tblr}{
+    colspec = {l l r},
+    row{1} = {bg=headercolor, font=\bfseries},
+    hlines,
+    vlines,
+}
+Configuration & Best Algorithm & Objective Value \\
+Makespan, No Blocking & BEST1/EXP & 7,331 \\
+Makespan, Blocking & BEST1/EXP & 7,370 \\
+Tardiness, No Blocking & RANDTOBEST1/EXP & 10,033,740 \\
+Tardiness, Blocking & RANDTOBEST1/EXP & 9,974,873 \\
+\end{tblr}
+\end{table}

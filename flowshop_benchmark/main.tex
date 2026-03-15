@@ -1,0 +1,242 @@
+\documentclass{article}
+\usepackage{geometry}
+\geometry{margin=1in}
+
+% Packages
+\usepackage{parskip}
+\usepackage{tabularray}
+\usepackage{xcolor}
+\usepackage{float}
+\usepackage{booktabs}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath}
+\usepackage{hyperref}
+\usepackage{graphicx}
+\usepackage[capitalize]{cleveref}
+\usepackage{tocloft}
+\UseTblrLibrary{booktabs}
+
+% Hyperref setup
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    filecolor=magenta,
+    urlcolor=cyan,
+    pdftitle={Algorithm Comparison Results},
+    pdfauthor={Alex Buckley},
+}
+
+% Enable list of equations with tocloft package
+\newcommand{\listequationsname}{List of Equations}
+\newlistof{equations}{equ}{\listequationsname}
+\newcommand{\myequations}[1]{%
+\addcontentsline{equ}{equations}{\protect\numberline{\theequation}#1}\par}
+
+% Make list of equations match list of tables formatting
+\renewcommand{\cftequationfont}{\normalfont}
+\renewcommand{\cftequationpagefont}{\normalfont}
+
+% Define header color
+\definecolor{headercolor}{gray}{0.9}
+
+\title{Optimizing the Flow Shop Problem with SPV Discrete Differential Evolution}
+\author{Alex Buckley}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+\clearpage
+
+\tableofcontents
+\clearpage
+
+\listoftables
+\clearpage
+
+\listoffigures
+\clearpage
+
+\listofequations
+\clearpage
+
+
+\section{Overview}
+
+\subsection{Experiment}
+
+This experiment analyzes the optimization of the flow shop problem with SPV Differential Evolution (DE) optimization. It performs optimizations of the flow shop problem for both makespan and tardiness. Both optimization targets are run with and without the blocking extension. Various DE strategies are used to conduct the optimization, with the NEH heuristic used to provide an initial seed for DE optimization. 
+
+\subsection{The Permutation Flow Shop Problem}
+
+The Permutation Flow Shop Problem involves scheduling jobs across machines in the most efficient manner possible. Inputs include a predefined number of jobs and machines, with each job taking a set amount of time to process on each machine. Jobs must be completed on machines in order, meaning a job must be processed on the first machine before it can be be processed on the second. Job order is adjusted in order to achieve optimal job scheduling. 
+
+There are different factors that job order can be optimized for. Firstly there is makespan, the total amount of time it takes for all jobs to be processed on all machines. In order to optimize for tardiness, an additional input \textit{due dates} must be included. Due dates is an array of numbers, with the ${i^{th}}$ element representing the time at which $jobs_i$ should be completed. For any given job sequence, a $tardiness$ array can be created, with $tardiness_i$ representing how long after its due date the $i^{th}$ job finished processing on all machines. If a job finishes before its due date, it has a tardiness value of $0$, as tardiness cannot be negative. The total tardiness of a job sequence can be calculated as the sum of each jobs' tardiness values. There are many other aspects of the flow shop problem that can be the target of optimization, however, this experiment only optimizes for makespan and tardiness.
+
+\subsubsection{Blocking Variation}
+
+This experiment also analyzes optimization for the blocking variation of the flow shop problem. The flow shop blocking problem prevents the use of intermediate job storage between machines. Thus, the blocking variation prevents a job from completing processing on $machine_i$ if $machine_{i+1}$ is busy. Both tardiness and makespan can be the optimization target regardless of whether blocking is used. The blocking variation generally results in increased tardiness and makespan when other inputs are held constant.
+
+\subsubsection{The NEH Heuristic}
+
+The Nawaz-Enscore-Ham (NEH) heuristic is a constructive algorithm commonly used to find high-quality solutions for the permutation flow shop problem. NEH works by sorting jobs, then testing the insertion of each job at each possible position. The job is then inserted in the most optimal position. Insert position can be chosen based off makespan, tardiness, or any other metric being optimized. However, the initial sort criterion should be adjusted based on the optimization target. When optimizing makespan, this experiment sorts jobs in decreasing order by the total processing time across all machines. Alternatively, tardiness optimization sorts by due date, starting with the earliest due date. 
+
+
+\subsection{Differential Evolution}
+
+Differential Evolution (DE) is a population-based metaheuristic algorithm designed to solve optimization problems. DE operates by maintaining a population of candidate solutions and iteratively improving them through mutation, crossover, and selection operations. In each generation, a mutant vector is created by adding a weighted difference of randomly selected population members to a base solution, then a trial vector is produced via crossover with the target solution, and the trial vector replaces the target if it achieves a lower objective value. The algorithm's effectiveness stems from its ability to balance exploration and exploitation through control parameters: the mutation scaling factor $F$ controls the magnitude of perturbations, while the crossover rate $CR$ governs the probability of inheriting components from the mutant vector. DE has proven highly effective across diverse optimization landscapes due to its simplicity, robustness, and minimal hyperparameter requirements compared to other metaheuristics.
+
+\section{Experiment Methodology}
+
+This experiment analyzes DE optimization results with differing mutation and crossover strategies, for both tardiness and makespan optimization. All experiments are performed with blocking and non-blocking variants. In order to achieve more accurate results, multiple runs are conducted for each experiment configuration, differing only by rng seed. 10 runs are conducted for each problem setup, with the initial seed ranging from 1 to 10. While a higher number of runs, 30, is more standard and reliable for experimentation, the runtime of the experiment was very high, even conducting only 10 runs. 
+
+Despite initial seed value always running from 1 to 10 for each problem, actual rng seeds used within the problem throughout the run differ. However, the final seed values used within an experiment is deterministic, based of initial seed and other experiment inputs. This is because each run requires multiple rng generators to be created. Because of the parallelistic nature of this DE implementation, multiple generators are invoked concurrently. Thus, initializing rng objects based on loop iteration plus initial seed is used throughout the experiment in order to avoid race conditions.
+
+
+\subsection{DE Implementation}
+
+This experiments utilizes the \textit{OptiPy} library to perform the optimization experiments. Though providing a Python interface, \textit{OptiPy} utilizes \textit{C++} for performing optimizations, as well as OpenMP for CPU-based parallelism. Importantly, \textit{OptiPy} ensures deterministic pseudo-random number generations, allowing for repeatable and consistent experimentation.
+
+Before running the DE optimization, an initial population must be created. While 75\% of the initial population is generated pseudo-randomly, an NEH optimization is used to initialize the rest. While the NEH-generated solution is only included once, random noise is added to the remaining initial population, as seen in \cref{eq:init_perturbation}. When optimizing for makespan $\sigma_p = 0.1$ is used while tardiness optimization has $\sigma_p = 0.02$. 
+
+
+\begin{equation}
+\vec{x}_i = \text{clamp}\left(\vec{x}_{\text{NEH}} + \sigma_p \cdot \mathcal{U}(-1, 1), -1, 1\right)
+\label{eq:init_perturbation}
+\end{equation}
+\myequations{Initial Population NEH Pertubation}
+
+
+\subsubsection{Discrete DE}
+
+The standard DE algorithm requires a continuous search space in order to function. However, the flow shop problem is inherently combinatorial, thus having a discrete search space. The Standard Permutation Vector (SPV) is used to navigate this discrepancy. SPV allows DE to operate on a continuous search space while still allowing for the generation and evaluation of a job sequence. SPV maps a continuous $\vec{x} \in [-1, 1]^n$ to a job sequence by performing an argsort. This operation outputs a vector of the same length of $\vec{x}$, ($n$) containing unique integers $\in [0, n - 1]$. Thus, an evaluation of makespan or tardiness can be calculated by treating the sorted vector as a job sequence. \cite{Onwubolu2009} details the SPV strategy, as well as many other techniques that can be used to apply DE to discrete and combinatorial problems.
+
+
+\subsection{Optimization Strategies}
+
+This experiment focuses on the effectiveness of different DE mutation and crossover strategies when applied to the flow shop problem. Utilized Mutations can be seen in \cref{tab:de_mutation_strategies}
+
+\input{tables/mutation_strats.tex}
+ 
+\cref{tab:de_crossover_strategies} Shows the utilized crossover strategies.
+
+\input{tables/crossover_strats.tex}
+
+
+\subsection{Flow Shop Inputs}
+\subsubsection{Job Times}
+
+The Taillard benchmark set is a widely-used standard dataset for evaluating permutation flow shop scheduling algorithms, comprising instances with varying numbers of jobs and machines. Each instance in the Taillard set is characterized by its dimensions $(n \times m)$, where $n$ is the number of jobs and $m$ is the number of machines, and includes job processing times generated pseudo-randomly to avoid trivial or pathological problem structures. The dataset is valuable for algorithm comparison because known optimal or near-optimal solutions have been established for many instances through extensive prior research, allowing new algorithms to be evaluated against benchmark performance metrics. Taillard instances range from small problems (e.g., $20 \times 5$) to large instances (e.g., $100 \times 20$), providing a scalability test across problem sizes. This experiment uses Taillard instances to systematically evaluate DE performance on both makespan and tardiness optimization objectives, with and without the blocking constraint, ensuring that results are comparable to prior work and representative of real-world flow shop scheduling complexity. \cite{Taillard1993} first introduced the Taillard dataset in 1993, and it has been the de facto standard for makespan optimization benchmarking since.
+
+
+\subsubsection{Due Dates}
+
+The Taillard dataset does not contain due dates for tardiness calculation. Instead of relying on a data set with due dates, this experiment generates due dates programmatically, with generation partially reliant on pseudo-random number generation. This is done with a seeded instance of NumPy's \textit{default\_rng} in order to ensure deterministic and repeatable due date generation.
+
+Due to its prominence in academic research, the \textit{proportional-random method} is used for due date generation. A standard implementation of this method applied to flow shop optimization by \cite{Elissaouy2024} is seen in \cref{eq:due-date-original}.
+
+\begin{equation}
+d_j = \rho \times \left[ \sum_{i=1}^{m} (p_{j,i} + st_i) \right] (1 + \text{rand}())
+\label{eq:due-date-original}
+\end{equation}
+\myequations{Original Proportional-Random Method}
+
+where $d_j$ is the due date for job $j$, $\rho \in (0, \infty)$ is a tightness factor controlling deadline difficulty, $p_{j,i}$ is the processing time of job $j$ on machine $i$, $st_i$ is the sequence-independent setup time for machine $i$, $m$ is the total number of machines, and $\text{rand}() \in [0, 1)$ is a uniformly distributed random variable.
+
+However, this generation method could not be directly implemented in this experiment, as this flowshop model does not track machine setup times. Consequently, we adapted the formula by omitting setup time, as seen in \cref{eq:due-date-modified}.
+
+\begin{equation}
+d_j = \rho \times \left[ \sum_{i=1}^{m} p_{j,i} \right] (1 + \text{rand}())
+\label{eq:due-date-modified}
+\end{equation}
+\myequations{Upddated Proportional-Random Method}
+
+\subsubsection{DE hyperparameters}
+
+The hyperparameters used in DE optimization can significantly impact the performance of the algorithm. While mutation and crossover strategies are manipulated and analyzed, this experiment uses constant values for other DE inputs. The values, as seen in \cref{tab:de_hyperparameters}, were chosen through informal experimentation. While they are likely far from optimal, they provide consistent DE behavior, allowing the experiment to provide more accurate insight into the effectiveness of different DE mutation and crossover strategies. Additionally, in order to reduce the time required to conduct experiments, population size and max generations were reduced. Optimization results would likely benefit from a higher value for both
+
+\input{tables/de_hyperparams.tex}
+
+
+\section{Experiment Results}
+
+In order to compare DE strategies across differing test cases, results have been averaged. For every combination of mutation and crossover strategy, the mean makespan and tardiness was computed. Mean was calculated seperately for blocking and non-blocking variants, as well as runs optimizing makespan and tardiness. This method helps provide insight of DE strategies across test cases and sizes. However, this methodology likely results in compared values being heavily swayed by test cases with a large number of jobs and machines over smaller cases. Nevertheless, it provides results that can be used to compare DE strategy effectiveness for the flow shop problem.
+
+
+\subsection{Makespan Optimization}
+\subsubsection{Without Blocking}
+
+\cref{fig:makespan_no_blocking} shows \textit{DE/best-1/exp} and \textit{DE/rand-to-best-1/exp} as the most successful DE variants. Overall, exponential crossover is demonstrated as very successful in optimizing makespan when blocking is not used, as they produced the 4 most successful optimizations. Furthermore \textit{DE/rand-2/exp} and \textit{DE/best-1/exp} tie for the fifth lowest makespan. Thus, the least successful strategy using exponential crossover produced equal results as the most successful binomial crossover strategy. 
+
+The relative effectiveness in this experiment of DE mutation strategies remained largely consistent regardless of whether exponential or binomial crossover was used. While \textit{DE/best-1/exp} and \textit{DE/rand-to-best-1/exp} ties for most successful strategies overall, \textit{DE/rand-to-best-1/bin} closely follows \textit{DE/best-1/bin} as the best strategies using binomial crossover. For both crossover methods, \textit{DE/rand-1} and \textit{DE/best-2} produced very similar makespans, with \textit{DE/rand-2} trailing by a larger gap. This suggests the effectiveness of mutation versus crossover strategies are largely independent of each other for this problem.
+
+\input{plots/makespan.tex}
+
+Not only did \textit{DE/best-1/exp} provide the best makespan for this problem, \cref{fig:makespan_no_blocking_times} shows it executing significantly quicker than other methodologies. \textit{best-1} seems to perform well in terms of execution speed, as \textit{DE/best-1/bin} holds the second fastest execution time. Overall, exponential crossover seems to perform well in this metric, with \textit{DE/best-1/bin} being the only binomial strategy to be among the 6 fastest algorithms. Exact averaged results can be seen in \cref{tab:makespan_noblocking}.
+
+
+\input{plots/makespan_times.tex}
+\input{tables/makespan_noblocking.tex}
+
+\subsubsection{With Blocking}
+
+Similarly to the non-blocking variant, \textit{DE/best-1/exp} and \textit{DE/rand-to-best-1/exp} tie for the most successful DE variants, albeit with a higher overall makespan when blocking is used. Furthermore, 3rd and 4th variations trail the top two by a notable margin, with \textit{DE/rand-to-best-1/bin} and \textit{DE/best-1/bin} producing very similar makespans. \textit{DE/rand-2/bin} is again least successful by a significant margin, with \textit{DE/rand-1/bin} and \textit{DE/best-2/bin} placing as 8th and 9th most successful, falling far behind the 7th most effective. These results indicate that while blocking and non-blocking variants produce very different raw makespans, the relative effectiveness of DE strategies remain largely consistent between the two problems. Furthermore, both problems produced aan overall makespan ranges differing by only 1 unit. \cref{tab:makespan_blocking} demonstrates this in a visual manner.
+
+\input{plots/block_makespan.tex}
+
+Despite the similarity in strategy's relative makespan optimization effectiveness between bloccking and non-blocking problems, execution times differed more significantlly. For example, \cref{fig:makespan_blocking_times} demonstrates a \textit{DE/best-1/bin} leading in this metric by a large margin with blocking enabled. However, \textit{best-1} proved to be the fastest mutation strategy in both problems regardless of crossover strategy. While \texit{DE/rand-1/bin} performed similarly well in both problems, there is little continuity between the execution speed of other strategies between blocking and non-blocking. While the blocking problem resulted in execution times all within 0.013 seconds of each other, non-blocking produced a much smaller range of 0.008 seconds. Exact averaged experiment results can be seen in \cref{tab:makespan_blocking}
+
+\input{plots/block_makespan_times.tex}
+
+\input{tables/makespan_blocking.tex}
+
+\subsection{Tardiness Optimization}
+\subsubsection{Without Blocking}
+
+
+Overall, optimizing for tardiness provided similar results in terms of DE strategies relative effectiveness as optimizing for makespan. For example, \cref{fig:tardiness_no_blocking} again shows \textit{DE/best-1/exp} and \textit{DE/rand-to-best-1/exp} as the most successful DE variants, followed by similarly performing \textit{DE/rand-1/exp} and \textit{DE/best-2/exp}. \textit{DE/rand-to-best/bin} is again the most successful binomial crossover strategy, with binomial crossover again being strongly outperformed by exponential crossover. 
+
+Final averaged tardiness values of each strategy fall in a range of 159,690 units of each other. This range makes up $1.5915\%$ of the most optimal tardiness value. This suggests that tardiness may vary more between strategies than makespan, as for non-blocking makespan optimization, the total makespan range comes out to $0.7463\%$ of the most optimal makespan. In other words, when optimizing for tardiness, the least optimal strategy's final tardiness was $1.5915\%$ greater than the best, while the worst makespan strategy produced a makespan $0.7463\%$ larger than the best.
+
+
+\input{plots/tard.tex}
+
+Not only was \textit{DE/rand-to-best-1/exp} the most successful strategy for optimizing tardiness in a non-blocking problem, it also executed the fastest, tied with \textit{DE/best-2/exp}. However, \cref{fig:tardiness_no_blocking_times} shows that relative execution time between strategies again differing from previous results. Despite problems producing similar relative optimization results, these discrepancies suggest that execution time is more significantly affected by problem type than optimization success. Execution times for this problem all fall within a range of 0.014 seconds, very similar to the range of times for blocking makespan optimization. Exact averaged results can be seen in \cref{tab:tardiness_noblocking}.
+
+\input{plots/tard_times.tex}
+
+\input{tables/tardiness_noblocking.tex}
+
+When optimizing for tardiness in a blocking problem, \textit{DE/rand-to-best-1/exp} once again proved to be the most successful strategy. Unlike previous problems, however, it led the 2nd best performing by a significant margin. \textit{DE/best-2/exp} performed far better than in previous problems, being the second most successful and leading 3rd by a large gap. Further differing previous problem results, \textit{DE/rand-2/exp} outperformed \textit{DE/rand-1/exp}. However, the overall trend of exponential crossover far outperforming binomial continued, with \textit{DE/rand-to-best-1/bin} once again being the most successful binomial crossover strategy.
+
+\cref{fig:tardiness_blocking} shows the range of total tardiness to be significantly larger in the blocking problem over non-blocking, with a total range of 219,203 units. The least optimal strategy produced a tardiness $2.1976\%$ greater than the most successful strategy, suggesting that blocking produces more variance among results across different DE strategies. 
+
+\subsubsection{With Blocking}
+
+\input{plots/block_tard.tex}
+
+For blocking tardiness optimization, \textit{best-1} appears to be the most computationally efficient strategies, achieving the fastest execution times regardless of mutation strategies. \cref{fig:tardiness_blocking_times} shows that there is again far less continuity in relative execution times across problem types. Execution times for this problem ranged by 0.008 seconds, producing a range similar to makespan blocking optimization. The fact that blocking variants had much smaller ranges than non-blocking regardless of optimization metrics suggest that blocking problems may decrease the effect differing mutation and crossover strategies have on execution time. Exact averaged results can be seen in \cref{tab:tardiness_blocking}.
+
+\input{plots/block_tard_times.tex}
+
+\input{tables/tardiness_blocking.tex}
+
+\section{Conclusion}
+
+Overall, DE strategies seemed to retain their relative effectiveness regardless of the optimized metric or the addition of the blocking variation. Several key findings emerged from the analysis.
+
+\textbf{Strategy Robustness:} DE/best-1/exp and DE/rand-to-best-1/exp consistently demonstrated superior performance across all problem variants---makespan and tardiness optimization, with and without blocking. This consistency suggests these mutation strategies are inherently well-suited to the flow shop problem's structure, regardless of the optimization objective.
+
+\textbf{Crossover Dominance:} Exponential crossover substantially outperformed binomial crossover in all tested scenarios. The performance gap ranged from modest (0.75\% for non-blocking makespan) to more substantial (2.2\% for blocking tardiness), indicating that the discretization method via Standard Permutation Vector may interact more favorably with exponential crossover's selective inheritance pattern.
+
+\textbf{Problem Independence:} The relative effectiveness of DE strategies remained largely consistent between blocking and non-blocking variants, despite raw objective values differing significantly. This suggests the algorithmic properties that make certain strategies effective are orthogonal to the blocking constraint, offering potential for generalization to other flow shop variants.
+
+\textbf{Computational Efficiency:} Best-1 mutation strategies exhibited faster execution times across most configurations, providing a practical advantage beyond solution quality. However, execution time rankings varied more across problem types than solution quality rankings, suggesting that computational efficiency may be less reliable than solution quality for predicting overall strategy performance.
+
+\clearpage
+
+% Include bibliography
+\bibliographystyle{plain}
+\bibliography{references}
+
+\end{document}

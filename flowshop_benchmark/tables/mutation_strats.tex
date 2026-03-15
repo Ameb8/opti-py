@@ -1,0 +1,19 @@
+\begin{table}[H]
+\centering
+\caption{Differential Evolution Mutation Strategies}
+\label{tab:de_mutation_strategies}
+\small
+\begin{tblr}{
+    colspec = {l l},
+    row{1} = {bg=headercolor, font=\bfseries},
+    hlines,
+    vlines,
+}
+Strategy & Description \\
+RAND1 & $\vec{v} = \vec{x}_r + F(\vec{x}_{r1} - \vec{x}_{r2})$ \\
+RAND2 & $\vec{v} = \vec{x}_r + F(\vec{x}_{r1} - \vec{x}_{r2}) + F(\vec{x}_{r3} - \vec{x}_{r4})$ \\
+BEST1 & $\vec{v} = \vec{x}_{best} + F(\vec{x}_{r1} - \vec{x}_{r2})$ \\
+BEST2 & $\vec{v} = \vec{x}_{best} + F(\vec{x}_{r1} - \vec{x}_{r2}) + F(\vec{x}_{r3} - \vec{x}_{r4})$ \\
+RANDTOBEST1 & $\vec{v} = \vec{x}_r + K(\vec{x}_{best} - \vec{x}_r) + F(\vec{x}_{r1} - \vec{x}_{r2})$ \\
+\end{tblr}
+\end{table}

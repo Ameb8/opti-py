@@ -1,0 +1,24 @@
+\begin{table}[H]
+\centering
+\caption{Algorithm Comparison: Makespan Optimization with Blocking}
+\label{tab:makespan_blocking}
+\small
+\begin{tblr}{
+    colspec = {r l r r r r},
+    row{1} = {bg=headercolor, font=\bfseries},
+    hlines,
+    vlines,
+}
+Rank & Algorithm & Makespan & ±Std & Tardiness & Time (s) \\
+1 & BEST1/EXP & 7,370 & ±0 & 10,837,772 & 0.451 \\
+2 & RANDTOBEST1/EXP & 7,370 & ±0 & 10,864,002 & 0.454 \\
+3 & RAND1/EXP & 7,379 & ±0 & 10,964,449 & 0.453 \\
+4 & BEST2/EXP & 7,381 & ±0 & 10,939,221 & 0.457 \\
+5 & RANDTOBEST1/BIN & 7,386 & ±0 & 10,929,240 & 0.459 \\
+6 & BEST1/BIN & 7,386 & ±0 & 10,944,476 & 0.448 \\
+7 & RAND2/EXP & 7,387 & ±0 & 10,928,142 & 0.458 \\
+8 & RAND1/BIN & 7,406 & ±0 & 10,989,051 & 0.456 \\
+9 & BEST2/BIN & 7,408 & ±0 & 10,923,764 & 0.455 \\
+10 & RAND2/BIN & 7,425 & ±0 & 10,997,462 & 0.461 \\
+\end{tblr}
+\end{table}

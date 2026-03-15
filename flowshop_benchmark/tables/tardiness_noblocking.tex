@@ -1,0 +1,24 @@
+\begin{table}[H]
+\centering
+\caption{Algorithm Comparison: Tardiness Optimization without Blocking}
+\label{tab:tardiness_noblocking}
+\small
+\begin{tblr}{
+    colspec = {r l r r r r},
+    row{1} = {bg=headercolor, font=\bfseries},
+    hlines,
+    vlines,
+}
+Rank & Algorithm & Makespan & ±Std & Tardiness & Time (s) \\
+1 & RANDTOBEST1/EXP & 7,612 & ±0 & 10,033,740 & 0.416 \\
+2 & BEST1/EXP & 7,609 & ±0 & 10,059,003 & 0.417 \\
+3 & RAND1/EXP & 7,621 & ±0 & 10,080,381 & 0.419 \\
+4 & BEST2/EXP & 7,615 & ±0 & 10,085,327 & 0.416 \\
+5 & RANDTOBEST1/BIN & 7,619 & ±0 & 10,095,675 & 0.420 \\
+6 & RAND2/EXP & 7,623 & ±0 & 10,107,761 & 0.424 \\
+7 & RAND1/BIN & 7,637 & ±0 & 10,120,438 & 0.423 \\
+8 & BEST2/BIN & 7,631 & ±0 & 10,176,677 & 0.422 \\
+9 & RAND2/BIN & 7,646 & ±0 & 10,203,170 & 0.430 \\
+10 & BEST1/BIN & 7,613 & ±0 & 10,205,641 & 0.417 \\
+\end{tblr}
+\end{table}
