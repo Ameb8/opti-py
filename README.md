@@ -4,6 +4,46 @@ OptiPy is a Python Optimization library designed to handle both the speed and ef
 
 OptiPy is designed to provide a simple interface for efficiently calculating optimization problems without imposing too many system and hardware requirements. This is done by building the optimization algorithms in *C++* as well as using *OpenMP* for CPU-based parallelism. 
 
+## Table of Contents
+
+- [OptiPy](#optipy)
+- [Using OptiPy](#using-optipy)
+  - [Installation](#installation)
+  - [Requirements](#requirements)
+  - [Running Optimizations](#running-optimizations)
+    - [Optimizing the Flow Shop Problem](#optimizing-the-flow-shop-problem)
+      - [Creating Flow Shop Problems](#creating-flow-shop-problems)
+        - [Due Dates](#due-dates)
+        - [Properties](#properties)
+      - [Optimizing the Flow Shop Problem](#optimizing-the-flow-shop-problem-1)
+        - [Optimizing with NEH Heuristic](#optimizing-with-neh-heuristic)
+        - [Optimizing with Differential Evolution](#optimizing-with-differential-evolution)
+      - [Flow Shop Results](#flow-shop-results)
+    - [Optimizing Standard Benchmark Functions](#optimizing-standard-benchmark-functions)
+      - [OptResult](#optresult)
+    - [Optimization Strategies](#optimization-strategies)
+      - [Differential Evolution](#differential-evolution)
+- [Project Implementation](#project-implementation)
+  - [Project Directory Structure](#project-directory-structure)
+- [Flow Shop Example Experiment](#flow-shop-example-experiment)
+  - [Overview](#overview)
+  - [Installation & Setup](#installation--setup)
+  - [Usage](#usage)
+    - [Arguments](#arguments)
+      - [Configuration & Data Paths](#configuration--data-paths)
+      - [Execution Modes](#execution-modes)
+      - [Debugging & Output](#debugging--output)
+    - [Examples](#examples)
+      - [Example 1: Full Pipeline (Default)](#example-1-full-pipeline-default)
+      - [Example 2: Experiments Only](#example-2-experiments-only)
+      - [Example 3: Load & Re-Analyze](#example-3-load--re-analyze)
+      - [Example 4: Verbose + Debug](#example-4-verbose--debug)
+      - [Example 5: Custom Paths](#example-5-custom-paths)
+  - [Configuration File (config.toml)](#configuration-file-configtoml)
+  - [Error Handling](#error-handling)
+  - [Exit Codes](#exit-codes)
+  - [See Also](#see-also)
+
 # Using OptiPy
 
 ## Installation
