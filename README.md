@@ -2,7 +2,9 @@
 
 OptiPy is a Python Optimization library designed to handle both the speed and efficiency of C++ code with the usability of Python code. It has support for minimizing standard benchmark functions, as well as optimizing the flow shop problem. The public interface provided by OptiPy is entirely in Python, including support for creating and running Optimizer objects.
 
-OptiPy is designed to provide a simple interface for efficiently calculating optimization problems without imposing too many system and hardware requirements. This is done by building the optimization algorithms in *C++* as well as using *OpenMP* for CPU-based parallelism. 
+## Why Use OptiPy?
+
+OptiPy is designed to provide a simple interface for efficiently calculating optimization problems without imposing too many system and hardware requirements. This is done by building the optimization algorithms in *C++* as well as using *OpenMP* for CPU-based parallelism. These techniques have resulted in real-world performance gains, experiencing between *7x* - *9x* speedup over *ScyPy's* DE implementation. For more details, a benchmark report [can be found here](https://github.com/Ameb8/opti-py/blob/master/docs/benchmark.md).
 
 ## Table of Contents
 

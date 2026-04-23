@@ -22,11 +22,11 @@ Both solvers used identical hyperparameters: mutation factor F = 0.8, crossover 
 
 Each function was run 10 times with independent seeds (42–51), and mean fitness, standard deviation, best fitness, and mean wall-clock time were recorded across runs. The primary comparison metric is mean fitness at budget exhaustion, which captures typical rather than lucky performance.
 
-One deliberate asymmetry exists between the two solvers: SciPy was configured to use all available CPU cores for parallelism, while OptiPy used its default OpenMP-based threading. Wall-clock time comparisons should be interpreted with this in mind — fitness quality metrics remain fully controlled.
+One deliberate asymmetry exists between the two solvers: SciPy was configured to use all available CPU cores for parallelism, while OptiPy used its default OpenMP-based threading. Informal testing showed SciPy to achieve better performance when utilizing all cores, thus, this was used in the benchmark. Exact experiment setup can be viewed [in the benchmark directory of this repository](https://github.com/Ameb8/opti-py/tree/master/benchmark).
 
 ## Results
 
-The benchmark results show a clear and consistent pattern: OptiPy prioritizes computational efficiency while SciPy emphasizes solution precision. Across all tested functions, OptiPy completes optimization runs roughly an order of magnitude faster, typically finishing in well under half a second, whereas SciPy requires several seconds per run. This gap is substantial and highlights one of OptiPy’s core strengths—its ability to deliver rapid results, making it well-suited for scenarios where evaluation time is critical, such as iterative experimentation, large-scale sweeps, or real-time applications. Below shows the performance results of the benchmark.
+The benchmark results show a clear and consistent pattern: OptiPy prioritizes computational efficiency while SciPy emphasizes solution precision. Across all tested functions, OptiPy completes optimization runs roughly an order of magnitude faster, typically finishing in well under half a second, whereas SciPy requires several seconds per run. This gap is substantial and highlights one of OptiPy’s core strengths—its ability to deliver rapid results, making it well-suited for scenarios where evaluation time is critical, such as iterative experimentation, large-scale sweeps, or real-time applications. Below shows the performance results of the benchmark, while exact results can be [found here](https://github.com/Ameb8/opti-py/blob/master/results/benchmark_results.csv).
 
 ![OptiPy and SciPy Performance Comparison](https://github.com/Ameb8/opti-py/blob/master/results/time_comparison.png)
 
